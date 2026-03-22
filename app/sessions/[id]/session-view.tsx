@@ -74,6 +74,7 @@ export function SessionView({
 
   // Close session
   const [closingSession, setClosingSession] = useState(false);
+  const [confirmClose, setConfirmClose] = useState(false);
 
   // Settle balance
   const [settling, setSettling] = useState(false);
@@ -188,6 +189,7 @@ export function SessionView({
       setSession((prev) => ({ ...prev, status: "CLOSED" }));
     }
     setClosingSession(false);
+    setConfirmClose(false);
   }
 
   async function settleBalance(amount: number, splitRatio: number) {
@@ -220,15 +222,18 @@ export function SessionView({
   const partnerExpenses = filteredExpenses.filter((e) => e.addedById !== currentUserId);
 
   return (
-    <div className="min-h-screen dark:bg-zinc-900">
-      <header className="border-b border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900">
-        <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
+    <div className="min-h-screen dark:bg-zinc-900 pb-safe">
+      {/* Header */}
+      <header className="border-b border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 sticky top-0 z-10">
+        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
+          {/* Left: back + title + badge */}
+          <div className="flex items-center gap-2 min-w-0">
             <Link
               href="/dashboard"
-              className="text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 text-sm shrink-0"
+              className="text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 text-sm shrink-0 p-1 -ml-1"
+              aria-label="Retour au dashboard"
             >
-              ← Retour
+              ←
             </Link>
             <span className="text-zinc-300 dark:text-zinc-600 shrink-0">/</span>
             <span className="text-sm font-medium truncate">{session.title}</span>
@@ -243,31 +248,27 @@ export function SessionView({
             </span>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          {/* Right: actions */}
+          <div className="flex items-center gap-1 shrink-0">
             <ThemeToggle />
-            {isCreator && session.status === "OPEN" && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={closeSession}
-                disabled={closingSession}
-              >
-                {closingSession ? "Fermeture…" : "Fermer"}
-              </Button>
-            )}
             {!session.invitee && (
               <Button variant="outline" size="sm" onClick={copyShareLink}>
-                {copied ? "✓ Copié !" : "🔗 Inviter"}
+                <span className="hidden sm:inline">
+                  {copied ? "✓ Copié !" : "🔗 Inviter"}
+                </span>
+                <span className="sm:hidden" aria-label="Inviter">
+                  {copied ? "✓" : "🔗"}
+                </span>
               </Button>
             )}
           </div>
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto px-4 py-6 space-y-6">
+      <main className="max-w-3xl mx-auto px-4 py-5 space-y-5">
         {/* Partner info */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3 text-sm">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2 text-sm">
             <span className="text-zinc-500 dark:text-zinc-400">Partenaire :</span>
             {partner ? (
               <span className="font-medium">{partner.name ?? "Invité"}</span>
@@ -275,13 +276,13 @@ export function SessionView({
               <div className="flex items-center gap-2">
                 <span className="text-zinc-400 dark:text-zinc-500 italic">En attente…</span>
                 <Button variant="outline" size="sm" onClick={copyShareLink}>
-                  {copied ? "✓ Lien copié !" : "Copier le lien d'invitation"}
+                  {copied ? "✓ Copié !" : "Copier le lien"}
                 </Button>
               </div>
             )}
           </div>
           <div className="text-sm text-zinc-500 dark:text-zinc-400">
-            Répartition par défaut :{" "}
+            Répartition :{" "}
             <span className="font-medium text-zinc-900 dark:text-zinc-100">
               {Math.round(session.defaultSplitRatio * 100)}% /{" "}
               {Math.round((1 - session.defaultSplitRatio) * 100)}%
@@ -295,7 +296,7 @@ export function SessionView({
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+              className={`flex-1 py-3 text-sm font-medium border-b-2 -mb-px transition-colors ${
                 tab === t
                   ? "border-zinc-900 dark:border-zinc-100 text-zinc-900 dark:text-zinc-100"
                   : "border-transparent text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
@@ -312,12 +313,12 @@ export function SessionView({
             {session.status === "OPEN" && (
               <>
                 {!showForm ? (
-                  <Button onClick={() => setShowForm(true)} className="w-full sm:w-auto">
+                  <Button onClick={() => setShowForm(true)} className="w-full">
                     + Ajouter une dépense
                   </Button>
                 ) : (
                   <Card>
-                    <CardHeader>
+                    <CardHeader className="pb-3">
                       <CardTitle className="text-base">Nouvelle dépense</CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -327,8 +328,8 @@ export function SessionView({
                             {formError}
                           </p>
                         )}
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="col-span-2 space-y-1.5">
+                        <div className="space-y-3">
+                          <div className="space-y-1.5">
                             <Label htmlFor="label">Description</Label>
                             <Input
                               id="label"
@@ -338,39 +339,43 @@ export function SessionView({
                               required
                             />
                           </div>
-                          <div className="space-y-1.5">
-                            <Label htmlFor="amount">Montant</Label>
-                            <Input
-                              id="amount"
-                              type="number"
-                              step="0.01"
-                              min="0.01"
-                              placeholder="0.00"
-                              value={formData.amount}
-                              onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                              required
-                            />
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                              <Label htmlFor="amount">Montant</Label>
+                              <Input
+                                id="amount"
+                                type="number"
+                                step="0.01"
+                                min="0.01"
+                                placeholder="0.00"
+                                inputMode="decimal"
+                                value={formData.amount}
+                                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                                required
+                              />
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label htmlFor="date">Date</Label>
+                              <Input
+                                id="date"
+                                type="date"
+                                value={formData.date}
+                                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                              />
+                            </div>
                           </div>
                           <div className="space-y-1.5">
-                            <Label htmlFor="date">Date</Label>
-                            <Input
-                              id="date"
-                              type="date"
-                              value={formData.date}
-                              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                            />
-                          </div>
-                          <div className="col-span-2 space-y-1.5">
                             <Label htmlFor="splitRatio">
                               Ma part (
                               {formData.splitRatio
                                 ? `${formData.splitRatio}%`
-                                : `${Math.round(session.defaultSplitRatio * 100)}% (défaut)`}
+                                : `${Math.round(session.defaultSplitRatio * 100)}% par défaut`}
                               )
                             </Label>
                             <Input
                               id="splitRatio"
                               type="number"
+                              inputMode="numeric"
                               min="0"
                               max="100"
                               placeholder={`Laisser vide = ${Math.round(session.defaultSplitRatio * 100)}%`}
@@ -379,11 +384,11 @@ export function SessionView({
                             />
                           </div>
                         </div>
-                        <div className="flex gap-2">
-                          <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
+                        <div className="flex gap-2 pt-1">
+                          <Button type="button" variant="outline" className="flex-1" onClick={() => setShowForm(false)}>
                             Annuler
                           </Button>
-                          <Button type="submit" disabled={formLoading}>
+                          <Button type="submit" className="flex-1" disabled={formLoading}>
                             {formLoading ? "Ajout…" : "Ajouter"}
                           </Button>
                         </div>
@@ -446,12 +451,12 @@ export function SessionView({
             )}
 
             {filteredExpenses.length === 0 && session.expenses.length === 0 && (
-              <p className="text-center text-zinc-400 dark:text-zinc-500 py-8">
+              <p className="text-center text-zinc-400 dark:text-zinc-500 py-10">
                 Aucune dépense pour le moment.
               </p>
             )}
             {filteredExpenses.length === 0 && session.expenses.length > 0 && (
-              <p className="text-center text-zinc-400 dark:text-zinc-500 py-8">
+              <p className="text-center text-zinc-400 dark:text-zinc-500 py-10">
                 Aucune dépense ne correspond à votre recherche.
               </p>
             )}
@@ -460,13 +465,53 @@ export function SessionView({
 
         {/* SUMMARY TAB */}
         {tab === "summary" && (
-          <SummaryView
-            session={session}
-            currentUserId={currentUserId}
-            formatCurrency={fmt}
-            onSettle={settleBalance}
-            settling={settling}
-          />
+          <div className="space-y-4">
+            <SummaryView
+              session={session}
+              currentUserId={currentUserId}
+              formatCurrency={fmt}
+              onSettle={settleBalance}
+              settling={settling}
+            />
+
+            {/* Close session — creator only, OPEN only, at bottom of summary */}
+            {isCreator && session.status === "OPEN" && (
+              <div className="border border-zinc-200 dark:border-zinc-700 rounded-xl p-4 space-y-3">
+                <div>
+                  <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                    Fermer la session
+                  </p>
+                  <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1">
+                    Une session fermée ne peut plus recevoir de nouvelles dépenses. Cette action est irréversible.
+                  </p>
+                </div>
+                {!confirmClose ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setConfirmClose(true)}
+                    className="border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950"
+                  >
+                    Fermer la session
+                  </Button>
+                ) : (
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setConfirmClose(false)}>
+                      Annuler
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="bg-red-600 hover:bg-red-700 text-white"
+                      onClick={closeSession}
+                      disabled={closingSession}
+                    >
+                      {closingSession ? "Fermeture…" : "Confirmer"}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         )}
       </main>
     </div>
@@ -538,8 +583,8 @@ function ExpenseList({
                         {editError}
                       </p>
                     )}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="col-span-2 space-y-1.5">
+                    <div className="space-y-3">
+                      <div className="space-y-1.5">
                         <Label>Description</Label>
                         <Input
                           value={editForm.label}
@@ -547,44 +592,46 @@ function ExpenseList({
                           required
                         />
                       </div>
-                      <div className="space-y-1.5">
-                        <Label>Montant</Label>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0.01"
-                          value={editForm.amount}
-                          onChange={(e) => onEditChange("amount", e.target.value)}
-                          required
-                        />
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <Label>Montant</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0.01"
+                            inputMode="decimal"
+                            value={editForm.amount}
+                            onChange={(e) => onEditChange("amount", e.target.value)}
+                            required
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label>Date</Label>
+                          <Input
+                            type="date"
+                            value={editForm.date}
+                            onChange={(e) => onEditChange("date", e.target.value)}
+                          />
+                        </div>
                       </div>
                       <div className="space-y-1.5">
-                        <Label>Date</Label>
-                        <Input
-                          type="date"
-                          value={editForm.date}
-                          onChange={(e) => onEditChange("date", e.target.value)}
-                        />
-                      </div>
-                      <div className="col-span-2 space-y-1.5">
-                        <Label>
-                          Ma part ({editForm.splitRatio ? `${editForm.splitRatio}%` : "défaut"})
-                        </Label>
+                        <Label>Ma part ({editForm.splitRatio ? `${editForm.splitRatio}%` : "défaut"})</Label>
                         <Input
                           type="number"
                           min="0"
                           max="100"
+                          inputMode="numeric"
                           placeholder="Laisser vide = défaut"
                           value={editForm.splitRatio}
                           onChange={(e) => onEditChange("splitRatio", e.target.value)}
                         />
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      <Button type="button" variant="outline" size="sm" onClick={onEditCancel}>
+                    <div className="flex gap-2 pt-1">
+                      <Button type="button" variant="outline" size="sm" className="flex-1" onClick={onEditCancel}>
                         Annuler
                       </Button>
-                      <Button type="submit" size="sm" disabled={editLoading}>
+                      <Button type="submit" size="sm" className="flex-1" disabled={editLoading}>
                         {editLoading ? "Sauvegarde…" : "Sauvegarder"}
                       </Button>
                     </div>
@@ -597,7 +644,7 @@ function ExpenseList({
           return (
             <div
               key={expense.id}
-              className="flex items-center justify-between bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg px-4 py-3 gap-2"
+              className="flex items-center bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-3 gap-3"
             >
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{expense.label}</p>
@@ -605,7 +652,7 @@ function ExpenseList({
                   {new Date(expense.date).toLocaleDateString("fr-FR")}
                   {expense.splitRatio !== null && (
                     <span className="ml-2">
-                      • répartition personnalisée ({Math.round(ratio * 100)}%)
+                      • {Math.round(ratio * 100)}% personnalisé
                     </span>
                   )}
                 </p>
@@ -616,10 +663,11 @@ function ExpenseList({
                   ma part : {formatCurrency(myShare)}
                 </p>
               </div>
+              {/* Action buttons — proper touch targets */}
               {isOwn && canDelete && (
                 <button
                   onClick={() => onEdit(expense)}
-                  className="text-zinc-300 dark:text-zinc-600 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors ml-1 shrink-0 text-xs"
+                  className="flex items-center justify-center w-9 h-9 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors shrink-0"
                   aria-label="Modifier"
                 >
                   ✏️
@@ -629,7 +677,7 @@ function ExpenseList({
                 <button
                   onClick={() => onDelete(expense.id)}
                   disabled={deletingId === expense.id}
-                  className="text-zinc-300 dark:text-zinc-600 hover:text-red-400 transition-colors ml-1 shrink-0"
+                  className="flex items-center justify-center w-9 h-9 rounded-lg text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950 transition-colors shrink-0"
                   aria-label="Supprimer"
                 >
                   {deletingId === expense.id ? "…" : "✕"}
@@ -724,8 +772,8 @@ function SummaryView({
             : "border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950"
         }
       >
-        <CardContent className="pt-6 text-center">
-          <div className="text-3xl mb-2">
+        <CardContent className="pt-6 text-center pb-6">
+          <div className="text-4xl mb-3">
             {settled ? "🤝" : currentUserBalance > 0.005 ? "💰" : "💸"}
           </div>
           {settled ? (
@@ -734,19 +782,19 @@ function SummaryView({
             </p>
           ) : currentUserBalance > 0.005 ? (
             <>
-              <p className="font-semibold text-green-700 dark:text-green-400">
+              <p className="text-sm font-semibold text-green-700 dark:text-green-400">
                 {partner?.name ?? "Votre partenaire"} vous doit
               </p>
-              <p className="text-2xl font-bold text-green-700 dark:text-green-400 mt-1">
+              <p className="text-3xl font-bold text-green-700 dark:text-green-400 mt-1">
                 {formatCurrency(Math.abs(currentUserBalance))}
               </p>
             </>
           ) : (
             <>
-              <p className="font-semibold text-amber-700 dark:text-amber-400">
+              <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">
                 Vous devez à {partner?.name ?? "votre partenaire"}
               </p>
-              <p className="text-2xl font-bold text-amber-700 dark:text-amber-400 mt-1">
+              <p className="text-3xl font-bold text-amber-700 dark:text-amber-400 mt-1">
                 {formatCurrency(Math.abs(currentUserBalance))}
               </p>
             </>
@@ -754,13 +802,9 @@ function SummaryView({
 
           {currentUserOwes && session.status === "OPEN" && (
             <Button
-              className="mt-4"
-              size="sm"
+              className="mt-4 w-full sm:w-auto"
               onClick={() =>
-                onSettle(
-                  Math.abs(currentUserBalance),
-                  isCurrentUserCreator ? 0 : 1
-                )
+                onSettle(Math.abs(currentUserBalance), isCurrentUserCreator ? 0 : 1)
               }
               disabled={settling}
             >
@@ -772,27 +816,27 @@ function SummaryView({
         </CardContent>
       </Card>
 
-      {/* Breakdown table */}
+      {/* Breakdown */}
       <Card>
-        <CardHeader>
+        <CardHeader className="pb-3">
           <CardTitle className="text-sm">Détail</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            <Row label="Total des dépenses" value={formatCurrency(total)} bold />
+            <Row label="Total" value={formatCurrency(total)} bold />
             <div className="border-t border-zinc-100 dark:border-zinc-700" />
             <Row label={`${currentUser?.name ?? "Vous"} — payé`} value={formatCurrency(currentUserPaid)} />
-            <Row label={`${currentUser?.name ?? "Vous"} — doit payer`} value={formatCurrency(currentUserShouldPay)} />
+            <Row label={`${currentUser?.name ?? "Vous"} — doit`} value={formatCurrency(currentUserShouldPay)} />
             <div className="border-t border-zinc-100 dark:border-zinc-700" />
             <Row label={`${partner?.name ?? "Partenaire"} — payé`} value={formatCurrency(partnerPaid)} />
-            <Row label={`${partner?.name ?? "Partenaire"} — doit payer`} value={formatCurrency(partnerShouldPay)} />
+            <Row label={`${partner?.name ?? "Partenaire"} — doit`} value={formatCurrency(partnerShouldPay)} />
           </div>
         </CardContent>
       </Card>
 
-      {/* Per-expense breakdown */}
+      {/* Per-expense */}
       <Card>
-        <CardHeader>
+        <CardHeader className="pb-3">
           <CardTitle className="text-sm">Par dépense</CardTitle>
         </CardHeader>
         <CardContent>
@@ -804,22 +848,19 @@ function SummaryView({
               const myShare = isCurrentUserCreator ? cShare : iShare;
               const partnerShare = isCurrentUserCreator ? iShare : cShare;
               return (
-                <div
-                  key={expense.id}
-                  className="py-3 flex items-center justify-between gap-2"
-                >
+                <div key={expense.id} className="py-3 flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{expense.label}</p>
-                    <p className="text-xs text-zinc-400 dark:text-zinc-500">
-                      Payé par {expense.addedBy.name ?? "—"} •{" "}
+                    <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
+                      {expense.addedBy.name ?? "—"} •{" "}
                       {new Date(expense.date).toLocaleDateString("fr-FR")}
                     </p>
                   </div>
                   <div className="text-right text-xs text-zinc-500 dark:text-zinc-400 shrink-0 space-y-0.5">
-                    <p>Total : {formatCurrency(expense.amount)}</p>
+                    <p className="font-medium">{formatCurrency(expense.amount)}</p>
                     <p>
-                      Vous : {formatCurrency(myShare)} /{" "}
-                      {partner?.name ?? "Partenaire"} : {formatCurrency(partnerShare)}
+                      Vous {formatCurrency(myShare)} / {partner?.name ?? "Partenaire"}{" "}
+                      {formatCurrency(partnerShare)}
                     </p>
                   </div>
                 </div>
@@ -832,15 +873,7 @@ function SummaryView({
   );
 }
 
-function Row({
-  label,
-  value,
-  bold,
-}: {
-  label: string;
-  value: string;
-  bold?: boolean;
-}) {
+function Row({ label, value, bold }: { label: string; value: string; bold?: boolean }) {
   return (
     <div className={`flex justify-between text-sm ${bold ? "font-semibold" : ""}`}>
       <span className="text-zinc-600 dark:text-zinc-400">{label}</span>

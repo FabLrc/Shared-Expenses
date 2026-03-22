@@ -47,18 +47,18 @@ export default function NewSessionPage() {
   }
 
   return (
-    <div className="min-h-screen">
-      <header className="border-b border-zinc-200 bg-white">
-        <div className="max-w-3xl mx-auto px-4 py-4 flex items-center gap-3">
-          <Link href="/dashboard" className="text-zinc-400 hover:text-zinc-900 text-sm">
+    <div className="min-h-screen dark:bg-zinc-900">
+      <header className="border-b border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 sticky top-0 z-10">
+        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
+          <Link href="/dashboard" className="text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 text-sm">
             ← Retour
           </Link>
-          <span className="text-zinc-300">/</span>
+          <span className="text-zinc-300 dark:text-zinc-600">/</span>
           <span className="text-sm font-medium">Nouvelle session</span>
         </div>
       </header>
 
-      <main className="max-w-lg mx-auto px-4 py-10">
+      <main className="max-w-lg mx-auto px-4 py-6">
         <Card>
           <CardHeader>
             <CardTitle>Nouvelle session</CardTitle>
@@ -91,7 +91,7 @@ export default function NewSessionPage() {
                   id="currency"
                   value={form.currency}
                   onChange={(e) => setForm({ ...form, currency: e.target.value })}
-                  className="flex h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900"
+                  className="flex h-10 w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-400"
                 >
                   {CURRENCIES.map((c) => (
                     <option key={c} value={c}>{c}</option>
@@ -114,7 +114,7 @@ export default function NewSessionPage() {
                   onChange={(e) =>
                     setForm({ ...form, defaultSplitRatio: Number(e.target.value) })
                   }
-                  className="w-full accent-zinc-900"
+                  className="w-full accent-zinc-900 dark:accent-zinc-100 h-2 cursor-pointer"
                 />
                 <div className="flex justify-between text-xs text-zinc-400">
                   <span>0% (l&apos;autre paie tout)</span>
