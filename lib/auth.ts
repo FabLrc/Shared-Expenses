@@ -51,6 +51,7 @@ const providers: Provider[] = [
 export const authConfig: NextAuthConfig = {
   adapter: PrismaAdapter(prisma),
   providers,
+  trustHost: true,
   session: {
     strategy: "jwt",
   },
