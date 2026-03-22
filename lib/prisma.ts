@@ -1,24 +1,24 @@
-/* eslint-disable @typescript-eslint/no-require-imports, @typescript-eslint/no-explicit-any */
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: any;
-};
+// DATABASE_URL is the standard PostgreSQL connection string provided by
+// Vercel Prisma Postgres (and works locally too).
+// In Prisma 7, the URL cannot be set in schema.prisma — it must be passed
+// via a driver adapter in the PrismaClient constructor.
+const connectionString =
+  process.env.DATABASE_URL ??
+  process.env.POSTGRES_URL ??
+  "postgresql://localhost/splitmate";
 
-function createPrismaClient() {
-  const connectionString =
-    process.env.POSTGRES_PRISMA_URL ??
-    process.env.DATABASE_URL ??
-    "postgresql://localhost/splitmate";
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined };
 
-  const { Pool } = require("pg");
-  const pool = new Pool({ connectionString });
-  const adapter = new PrismaPg(pool as any);
-  return new (PrismaClient as any)({ adapter });
+function createClient() {
+  const adapter = new PrismaPg({ connectionString });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return new PrismaClient({ adapter } as any);
 }
 
 export const prisma: PrismaClient =
-  globalForPrisma.prisma ?? createPrismaClient();
+  globalForPrisma.prisma ?? createClient();
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
