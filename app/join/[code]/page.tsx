@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { JoinClient } from "./join-client";
 
 export default async function JoinPage({
@@ -69,6 +70,8 @@ export default async function JoinPage({
       data: { inviteeId: session.user.id },
     });
 
+    revalidatePath(`/sessions/${expSession.id}`);
+    revalidatePath("/dashboard");
     redirect(`/sessions/${expSession.id}`);
   }
 

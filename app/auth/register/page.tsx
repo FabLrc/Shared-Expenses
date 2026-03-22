@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function RegisterPage() {
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -34,7 +37,7 @@ export default function RegisterPage() {
     await signIn("credentials", {
       email: form.email,
       password: form.password,
-      callbackUrl: "/dashboard",
+      callbackUrl,
     });
   }
 
@@ -51,7 +54,7 @@ export default function RegisterPage() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+              onClick={() => signIn("google", { callbackUrl })}
               className="gap-2"
             >
               <GoogleIcon />
@@ -60,7 +63,7 @@ export default function RegisterPage() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => signIn("discord", { callbackUrl: "/dashboard" })}
+              onClick={() => signIn("discord", { callbackUrl })}
               className="gap-2"
             >
               <DiscordIcon />
@@ -125,7 +128,7 @@ export default function RegisterPage() {
         <CardFooter className="justify-center">
           <p className="text-sm text-zinc-500">
             Déjà un compte ?{" "}
-            <Link href="/auth/signin" className="font-medium text-zinc-900 dark:text-zinc-100 hover:underline">
+            <Link href={callbackUrl !== "/dashboard" ? `/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}` : "/auth/signin"} className="font-medium text-zinc-900 dark:text-zinc-100 hover:underline">
               Se connecter
             </Link>
           </p>
