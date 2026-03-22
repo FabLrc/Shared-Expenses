@@ -44,13 +44,13 @@ export default async function DashboardPage({
 
   return (
     <div className="min-h-screen dark:bg-zinc-900">
-      <header className="border-b border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900">
+      <header className="border-b border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800/60 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
           <Link href="/dashboard" className="text-lg font-bold">
             💸 SplitMate
           </Link>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-zinc-500 dark:text-zinc-400">
+            <span className="text-sm text-zinc-500 dark:text-zinc-200">
               {session.user.name ?? session.user.email}
             </span>
             <ThemeToggle />

@@ -230,12 +230,12 @@ export function SessionView({
           <div className="flex items-center gap-2 min-w-0">
             <Link
               href="/dashboard"
-              className="text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 text-sm shrink-0 p-1 -ml-1"
+              className="text-zinc-500 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 text-sm shrink-0 p-1 -ml-1"
               aria-label="Retour au dashboard"
             >
               ←
             </Link>
-            <span className="text-zinc-300 dark:text-zinc-600 shrink-0">/</span>
+            <span className="text-zinc-300 dark:text-zinc-500 shrink-0">/</span>
             <span className="text-sm font-medium truncate">{session.title}</span>
             <span
               className={`text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ${
@@ -274,7 +274,7 @@ export function SessionView({
               <span className="font-medium">{partner.name ?? "Invité"}</span>
             ) : (
               <div className="flex items-center gap-2">
-                <span className="text-zinc-400 dark:text-zinc-500 italic">En attente…</span>
+                <span className="text-zinc-400 dark:text-zinc-300 italic">En attente…</span>
                 <Button variant="outline" size="sm" onClick={copyShareLink}>
                   {copied ? "✓ Copié !" : "Copier le lien"}
                 </Button>
@@ -451,12 +451,12 @@ export function SessionView({
             )}
 
             {filteredExpenses.length === 0 && session.expenses.length === 0 && (
-              <p className="text-center text-zinc-400 dark:text-zinc-500 py-10">
+              <p className="text-center text-zinc-400 dark:text-zinc-400 py-10">
                 Aucune dépense pour le moment.
               </p>
             )}
             {filteredExpenses.length === 0 && session.expenses.length > 0 && (
-              <p className="text-center text-zinc-400 dark:text-zinc-500 py-10">
+              <p className="text-center text-zinc-400 dark:text-zinc-400 py-10">
                 Aucune dépense ne correspond à votre recherche.
               </p>
             )}
@@ -481,7 +481,7 @@ export function SessionView({
                   <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
                     Fermer la session
                   </p>
-                  <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1">
+                  <p className="text-xs text-zinc-400 dark:text-zinc-300 mt-1">
                     Une session fermée ne peut plus recevoir de nouvelles dépenses. Cette action est irréversible.
                   </p>
                 </div>
@@ -648,7 +648,7 @@ function ExpenseList({
             >
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{expense.label}</p>
-                <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
+                <p className="text-xs text-zinc-400 dark:text-zinc-400 mt-0.5">
                   {new Date(expense.date).toLocaleDateString("fr-FR")}
                   {expense.splitRatio !== null && (
                     <span className="ml-2">
@@ -659,7 +659,7 @@ function ExpenseList({
               </div>
               <div className="text-right shrink-0">
                 <p className="text-sm font-semibold">{formatCurrency(expense.amount)}</p>
-                <p className="text-xs text-zinc-400 dark:text-zinc-500">
+                <p className="text-xs text-zinc-400 dark:text-zinc-400">
                   ma part : {formatCurrency(myShare)}
                 </p>
               </div>
@@ -851,7 +851,7 @@ function SummaryView({
                 <div key={expense.id} className="py-3 flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{expense.label}</p>
-                    <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
+                    <p className="text-xs text-zinc-400 dark:text-zinc-400 mt-0.5">
                       {expense.addedBy.name ?? "—"} •{" "}
                       {new Date(expense.date).toLocaleDateString("fr-FR")}
                     </p>
