@@ -34,7 +34,7 @@ export default async function SessionPage({
   if (!isMember) redirect("/dashboard");
 
   const summary = calculateSessionSummary(expSession);
-  const shareUrl = `${process.env.NEXTAUTH_URL ?? ""}/join/${expSession.shareCode}`;
+  const shareUrl = `${(process.env.NEXTAUTH_URL ?? "").replace(/\/$/, "")}/join/${expSession.shareCode}`;
 
   return (
     <SessionView
