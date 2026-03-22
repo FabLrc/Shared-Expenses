@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect, notFound } from "next/navigation";
-import { calculateSessionSummary, formatCurrency } from "@/lib/calculations";
+import { calculateSessionSummary } from "@/lib/calculations";
 import { SessionView } from "./session-view";
 
 export default async function SessionPage({
@@ -42,9 +42,7 @@ export default async function SessionPage({
       currentUserId={session.user.id}
       summary={summary}
       shareUrl={shareUrl}
-      formatCurrency={(amount: number) =>
-        formatCurrency(amount, expSession.currency)
-      }
+      currency={expSession.currency}
     />
   );
 }

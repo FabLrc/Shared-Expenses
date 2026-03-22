@@ -12,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { formatCurrency } from "@/lib/calculations";
 import type { SessionSummary } from "@/lib/calculations";
 import type { Expense, ExpenseSession, User } from "@prisma/client";
 
@@ -28,7 +29,7 @@ interface Props {
   currentUserId: string;
   summary: SessionSummary | null;
   shareUrl: string;
-  formatCurrency: (amount: number) => string;
+  currency: string;
 }
 
 type Tab = "expenses" | "summary";
@@ -38,8 +39,9 @@ export function SessionView({
   currentUserId,
   summary: initialSummary,
   shareUrl,
-  formatCurrency,
+  currency,
 }: Props) {
+  const fmt = (amount: number) => formatCurrency(amount, currency);
   const [session, setSession] = useState(initialSession);
   const [tab, setTab] = useState<Tab>("expenses");
   const [copied, setCopied] = useState(false);
@@ -308,7 +310,7 @@ export function SessionView({
               expenses={myExpenses}
               currentUserId={currentUserId}
               defaultSplitRatio={session.defaultSplitRatio}
-              formatCurrency={formatCurrency}
+              formatCurrency={fmt}
               onDelete={deleteExpense}
               deletingId={deletingId}
               canDelete={session.status === "OPEN"}
@@ -321,7 +323,7 @@ export function SessionView({
                 expenses={partnerExpenses}
                 currentUserId={currentUserId}
                 defaultSplitRatio={session.defaultSplitRatio}
-                formatCurrency={formatCurrency}
+                formatCurrency={fmt}
                 onDelete={deleteExpense}
                 deletingId={deletingId}
                 canDelete={false}
@@ -341,7 +343,7 @@ export function SessionView({
           <SummaryView
             session={session}
             currentUserId={currentUserId}
-            formatCurrency={formatCurrency}
+            formatCurrency={fmt}
           />
         )}
       </main>
