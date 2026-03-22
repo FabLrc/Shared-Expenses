@@ -7,11 +7,11 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-zinc-900 text-white hover:bg-zinc-700 focus-visible:ring-zinc-900",
+        default: "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-zinc-700 dark:hover:bg-white focus-visible:ring-zinc-900",
         destructive: "bg-red-500 text-white hover:bg-red-600 focus-visible:ring-red-500",
-        outline: "border border-zinc-300 bg-white text-zinc-900 hover:bg-zinc-50 focus-visible:ring-zinc-900",
-        ghost: "text-zinc-900 hover:bg-zinc-100 focus-visible:ring-zinc-900",
-        link: "text-zinc-900 underline-offset-4 hover:underline",
+        outline: "border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-700 focus-visible:ring-zinc-900",
+        ghost: "text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 focus-visible:ring-zinc-900",
+        link: "text-zinc-900 dark:text-zinc-100 underline-offset-4 hover:underline",
       },
       size: {
         default: "h-10 px-4 py-2",

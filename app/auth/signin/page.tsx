@@ -64,7 +64,7 @@ export default function SignInPage() {
               <span className="w-full border-t border-zinc-200" />
             </div>
             <div className="relative flex justify-center text-xs">
-              <span className="bg-white px-2 text-zinc-400">ou</span>
+              <span className="bg-white dark:bg-zinc-800 px-2 text-zinc-400 dark:text-zinc-500">ou</span>
             </div>
           </div>
 
@@ -104,7 +104,7 @@ export default function SignInPage() {
         <CardFooter className="justify-center">
           <p className="text-sm text-zinc-500">
             Pas encore de compte ?{" "}
-            <Link href="/auth/register" className="font-medium text-zinc-900 hover:underline">
+            <Link href="/auth/register" className="font-medium text-zinc-900 dark:text-zinc-100 hover:underline">
               S&apos;inscrire
             </Link>
           </p>

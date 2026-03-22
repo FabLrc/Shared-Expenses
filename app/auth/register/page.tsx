@@ -73,7 +73,7 @@ export default function RegisterPage() {
               <span className="w-full border-t border-zinc-200" />
             </div>
             <div className="relative flex justify-center text-xs">
-              <span className="bg-white px-2 text-zinc-400">ou par email</span>
+              <span className="bg-white dark:bg-zinc-800 px-2 text-zinc-400 dark:text-zinc-500">ou par email</span>
             </div>
           </div>
 
@@ -125,7 +125,7 @@ export default function RegisterPage() {
         <CardFooter className="justify-center">
           <p className="text-sm text-zinc-500">
             Déjà un compte ?{" "}
-            <Link href="/auth/signin" className="font-medium text-zinc-900 hover:underline">
+            <Link href="/auth/signin" className="font-medium text-zinc-900 dark:text-zinc-100 hover:underline">
               Se connecter
             </Link>
           </p>
