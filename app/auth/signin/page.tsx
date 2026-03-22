@@ -1,7 +1,7 @@
 "use client";
 
 import { signIn } from "next-auth/react";
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
-export default function SignInPage() {
+function SignInForm() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
   const [email, setEmail] = useState("");
@@ -35,84 +35,95 @@ export default function SignInPage() {
   }
 
   return (
+    <Card className="w-full max-w-sm">
+      <CardHeader className="text-center">
+        <div className="text-3xl mb-2">💸</div>
+        <CardTitle>Connexion</CardTitle>
+        <CardDescription>Accédez à vos sessions de dépenses</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 gap-3">
+          <Button
+            variant="outline"
+            onClick={() => signIn("google", { callbackUrl })}
+            className="gap-2"
+          >
+            <GoogleIcon />
+            Google
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => signIn("discord", { callbackUrl })}
+            className="gap-2"
+          >
+            <DiscordIcon />
+            Discord
+          </Button>
+        </div>
+
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t border-zinc-200" />
+          </div>
+          <div className="relative flex justify-center text-xs">
+            <span className="bg-white dark:bg-zinc-800 px-2 text-zinc-400 dark:text-zinc-500">ou</span>
+          </div>
+        </div>
+
+        <form onSubmit={handleCredentials} className="space-y-3">
+          {error && (
+            <p className="text-sm text-red-500 bg-red-50 rounded-lg px-3 py-2">
+              {error}
+            </p>
+          )}
+          <div className="space-y-1.5">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="vous@email.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="password">Mot de passe</Label>
+            <Input
+              id="password"
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? "Connexion…" : "Se connecter"}
+          </Button>
+        </form>
+      </CardContent>
+      <CardFooter className="justify-center">
+        <p className="text-sm text-zinc-500">
+          Pas encore de compte ?{" "}
+          <Link
+            href={callbackUrl !== "/dashboard" ? `/auth/register?callbackUrl=${encodeURIComponent(callbackUrl)}` : "/auth/register"}
+            className="font-medium text-zinc-900 dark:text-zinc-100 hover:underline"
+          >
+            S&apos;inscrire
+          </Link>
+        </p>
+      </CardFooter>
+    </Card>
+  );
+}
+
+export default function SignInPage() {
+  return (
     <main className="flex flex-1 items-center justify-center px-4 py-16">
-      <Card className="w-full max-w-sm">
-        <CardHeader className="text-center">
-          <div className="text-3xl mb-2">💸</div>
-          <CardTitle>Connexion</CardTitle>
-          <CardDescription>Accédez à vos sessions de dépenses</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <Button
-              variant="outline"
-              onClick={() => signIn("google", { callbackUrl })}
-              className="gap-2"
-            >
-              <GoogleIcon />
-              Google
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => signIn("discord", { callbackUrl })}
-              className="gap-2"
-            >
-              <DiscordIcon />
-              Discord
-            </Button>
-          </div>
-
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-zinc-200" />
-            </div>
-            <div className="relative flex justify-center text-xs">
-              <span className="bg-white dark:bg-zinc-800 px-2 text-zinc-400 dark:text-zinc-500">ou</span>
-            </div>
-          </div>
-
-          <form onSubmit={handleCredentials} className="space-y-3">
-            {error && (
-              <p className="text-sm text-red-500 bg-red-50 rounded-lg px-3 py-2">
-                {error}
-              </p>
-            )}
-            <div className="space-y-1.5">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="vous@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="password">Mot de passe</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Connexion…" : "Se connecter"}
-            </Button>
-          </form>
-        </CardContent>
-        <CardFooter className="justify-center">
-          <p className="text-sm text-zinc-500">
-            Pas encore de compte ?{" "}
-            <Link href={callbackUrl !== "/dashboard" ? `/auth/register?callbackUrl=${encodeURIComponent(callbackUrl)}` : "/auth/register"} className="font-medium text-zinc-900 dark:text-zinc-100 hover:underline">
-              S&apos;inscrire
-            </Link>
-          </p>
-        </CardFooter>
-      </Card>
+      <Suspense fallback={<div className="w-full max-w-sm h-96 rounded-xl bg-zinc-100 dark:bg-zinc-800 animate-pulse" />}>
+        <SignInForm />
+      </Suspense>
     </main>
   );
 }
