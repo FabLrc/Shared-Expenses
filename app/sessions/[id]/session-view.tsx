@@ -691,6 +691,17 @@ function ExpenseList({
   );
 }
 
+type SortKey = "date-desc" | "date-asc" | "amount-desc" | "amount-asc" | "name-asc";
+type FilterKey = "all" | "mine" | "partner";
+
+const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+  { value: "date-desc", label: "Date ↓" },
+  { value: "date-asc", label: "Date ↑" },
+  { value: "amount-desc", label: "Montant ↓" },
+  { value: "amount-asc", label: "Montant ↑" },
+  { value: "name-asc", label: "Nom A→Z" },
+];
+
 function SummaryView({
   session,
   currentUserId,
@@ -704,6 +715,9 @@ function SummaryView({
   onSettle: (amount: number, splitRatio: number) => Promise<void>;
   settling: boolean;
 }) {
+  const [filter, setFilter] = useState<FilterKey>("all");
+  const [sort, setSort] = useState<SortKey>("date-desc");
+
   if (!session.invitee) {
     return (
       <Card className="text-center py-10">
@@ -755,6 +769,28 @@ function SummaryView({
 
   const settled = Math.abs(balance) < 0.005;
   const currentUserOwes = currentUserBalance < -0.005;
+
+  const filteredExpenses = [...session.expenses]
+    .filter((e) => {
+      if (filter === "mine") return e.addedById === currentUserId;
+      if (filter === "partner") return e.addedById !== currentUserId;
+      return true;
+    })
+    .sort((a, b) => {
+      switch (sort) {
+        case "date-asc": return new Date(a.date).getTime() - new Date(b.date).getTime();
+        case "date-desc": return new Date(b.date).getTime() - new Date(a.date).getTime();
+        case "amount-desc": return b.amount - a.amount;
+        case "amount-asc": return a.amount - b.amount;
+        case "name-asc": return a.label.localeCompare(b.label, "fr");
+      }
+    });
+
+  const filterOptions: { key: FilterKey; label: string }[] = [
+    { key: "all", label: "Toutes" },
+    { key: "mine", label: currentUser?.name ?? "Moi" },
+    { key: "partner", label: partner?.name ?? "Partenaire" },
+  ];
 
   return (
     <div className="space-y-4">
@@ -822,45 +858,131 @@ function SummaryView({
           <CardTitle className="text-sm">Détail</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
+          <div className="space-y-2">
             <Row label="Total" value={formatCurrency(total)} bold />
-            <div className="border-t border-zinc-100 dark:border-zinc-700" />
-            <Row label={`${currentUser?.name ?? "Vous"} — payé`} value={formatCurrency(currentUserPaid)} />
-            <Row label={`${currentUser?.name ?? "Vous"} — doit`} value={formatCurrency(currentUserShouldPay)} />
-            <div className="border-t border-zinc-100 dark:border-zinc-700" />
-            <Row label={`${partner?.name ?? "Partenaire"} — payé`} value={formatCurrency(partnerPaid)} />
-            <Row label={`${partner?.name ?? "Partenaire"} — doit`} value={formatCurrency(partnerShouldPay)} />
+            <div className="border-t border-zinc-100 dark:border-zinc-700 my-1" />
+            {/* Current user rows */}
+            <div className="rounded-lg bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900 px-3 py-2 space-y-1.5">
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className="w-2 h-2 rounded-full bg-blue-400 shrink-0" />
+                <span className="text-xs font-semibold text-blue-700 dark:text-blue-300">
+                  {currentUser?.name ?? "Vous"}
+                </span>
+              </div>
+              <Row label="Payé" value={formatCurrency(currentUserPaid)} />
+              <Row label="À payer" value={formatCurrency(currentUserShouldPay)} />
+            </div>
+            {/* Partner rows */}
+            <div className="rounded-lg bg-violet-50 dark:bg-violet-950/40 border border-violet-100 dark:border-violet-900 px-3 py-2 space-y-1.5">
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className="w-2 h-2 rounded-full bg-violet-400 shrink-0" />
+                <span className="text-xs font-semibold text-violet-700 dark:text-violet-300">
+                  {partner?.name ?? "Partenaire"}
+                </span>
+              </div>
+              <Row label="Payé" value={formatCurrency(partnerPaid)} />
+              <Row label="À payer" value={formatCurrency(partnerShouldPay)} />
+            </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Per-expense */}
       <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm">Par dépense</CardTitle>
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between gap-2">
+            <CardTitle className="text-sm">Par dépense</CardTitle>
+            {/* Legend */}
+            <div className="flex items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-blue-400 shrink-0" />
+                {currentUser?.name ?? "Vous"}
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-violet-400 shrink-0" />
+                {partner?.name ?? "Partenaire"}
+              </span>
+            </div>
+          </div>
         </CardHeader>
-        <CardContent>
-          <div className="divide-y divide-zinc-100 dark:divide-zinc-700">
-            {session.expenses.map((expense) => {
+        <CardContent className="space-y-3">
+          {/* Filters + Sort */}
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex gap-1.5">
+              {filterOptions.map(({ key, label }) => (
+                <button
+                  key={key}
+                  onClick={() => setFilter(key)}
+                  className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                    filter === key
+                      ? key === "mine"
+                        ? "bg-blue-500 text-white"
+                        : key === "partner"
+                        ? "bg-violet-500 text-white"
+                        : "bg-zinc-800 dark:bg-zinc-100 text-white dark:text-zinc-900"
+                      : "bg-zinc-100 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-600"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value as SortKey)}
+              className="ml-auto text-xs border border-zinc-200 dark:border-zinc-600 rounded-lg px-2 py-1 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 cursor-pointer focus:outline-none"
+            >
+              {SORT_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Expense rows */}
+          <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+            {filteredExpenses.length === 0 && (
+              <p className="text-center text-zinc-400 py-6 text-sm">Aucune dépense.</p>
+            )}
+            {filteredExpenses.map((expense) => {
               const ratio = expense.splitRatio ?? session.defaultSplitRatio;
               const cShare = expense.amount * ratio;
               const iShare = expense.amount * (1 - ratio);
               const myShare = isCurrentUserCreator ? cShare : iShare;
               const partnerShare = isCurrentUserCreator ? iShare : cShare;
+              const isMine = expense.addedById === currentUserId;
               return (
-                <div key={expense.id} className="py-3 flex items-start justify-between gap-3">
+                <div
+                  key={expense.id}
+                  className={`py-3 flex items-start justify-between gap-3 pl-3 border-l-2 ${
+                    isMine
+                      ? "border-l-blue-400"
+                      : "border-l-violet-400"
+                  }`}
+                >
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{expense.label}</p>
-                    <p className="text-xs text-zinc-400 dark:text-zinc-400 mt-0.5">
-                      {expense.addedBy.name ?? "—"} •{" "}
-                      {new Date(expense.date).toLocaleDateString("fr-FR")}
+                    <p className="text-xs mt-0.5">
+                      <span className={`font-medium ${isMine ? "text-blue-500 dark:text-blue-400" : "text-violet-500 dark:text-violet-400"}`}>
+                        {expense.addedBy.name ?? "—"}
+                      </span>
+                      <span className="text-zinc-400 dark:text-zinc-500">
+                        {" "}•{" "}{new Date(expense.date).toLocaleDateString("fr-FR")}
+                        {expense.splitRatio !== null && (
+                          <span> • {Math.round(ratio * 100)}% perso</span>
+                        )}
+                      </span>
                     </p>
                   </div>
-                  <div className="text-right text-xs text-zinc-500 dark:text-zinc-400 shrink-0 space-y-0.5">
-                    <p className="font-medium">{formatCurrency(expense.amount)}</p>
-                    <p>
-                      Vous {formatCurrency(myShare)} / {partner?.name ?? "Partenaire"}{" "}
-                      {formatCurrency(partnerShare)}
+                  <div className="text-right shrink-0 space-y-0.5">
+                    <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">
+                      {formatCurrency(expense.amount)}
+                    </p>
+                    <p className="text-xs">
+                      <span className="text-blue-500 dark:text-blue-400">{currentUser?.name ?? "Vous"}</span>
+                      <span className="text-zinc-400 dark:text-zinc-500"> {formatCurrency(myShare)} </span>
+                      <span className="text-zinc-300 dark:text-zinc-600">/</span>
+                      <span className="text-violet-500 dark:text-violet-400"> {partner?.name ?? "Partenaire"}</span>
+                      <span className="text-zinc-400 dark:text-zinc-500"> {formatCurrency(partnerShare)}</span>
                     </p>
                   </div>
                 </div>
