@@ -108,6 +108,13 @@ export function SessionView({
   // Settle balance
   const [settling, setSettling] = useState(false);
 
+  // Edit default split ratio
+  const [editingSplit, setEditingSplit] = useState(false);
+  const [newSplitPct, setNewSplitPct] = useState("");
+  const [splitConfirm, setSplitConfirm] = useState(false);
+  const [splitSaving, setSplitSaving] = useState(false);
+  const [splitError, setSplitError] = useState("");
+
   // Delete / Leave session
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -247,6 +254,42 @@ export function SessionView({
     setConfirmDelete(false);
   }
 
+  function openSplitEditor() {
+    setNewSplitPct(String(myDefaultPct));
+    setSplitError("");
+    setSplitConfirm(false);
+    setEditingSplit(true);
+  }
+
+  async function saveSplitRatio() {
+    setSplitSaving(true);
+    setSplitError("");
+    const pct = parseInt(newSplitPct, 10);
+    if (isNaN(pct) || pct < 0 || pct > 100) {
+      setSplitError("Pourcentage invalide (0-100).");
+      setSplitSaving(false);
+      return;
+    }
+    // Convert "my share" percentage to creator's ratio
+    const creatorRatio = isCreator ? pct / 100 : (100 - pct) / 100;
+    const res = await fetch(`/api/sessions/${session.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ defaultSplitRatio: creatorRatio }),
+    });
+    if (!res.ok) {
+      const data = await res.json();
+      setSplitError(data.error ?? "Erreur lors de la modification.");
+      setSplitSaving(false);
+      return;
+    }
+    const updated = await res.json();
+    setSession((prev) => ({ ...prev, defaultSplitRatio: updated.defaultSplitRatio }));
+    setEditingSplit(false);
+    setSplitConfirm(false);
+    setSplitSaving(false);
+  }
+
   async function settleBalance(amount: number, splitRatio: number) {
     setSettling(true);
     const res = await fetch(`/api/sessions/${session.id}/expenses`, {
@@ -337,11 +380,81 @@ export function SessionView({
             )}
           </div>
           <div className="text-sm text-zinc-500 dark:text-zinc-400">
-            Répartition :{" "}
-            <span className="font-medium text-zinc-900 dark:text-zinc-100">
-              {session.creator.name ?? "Créateur"} {Math.round(session.defaultSplitRatio * 100)}% /{" "}
-              {session.invitee?.name ?? "Invité"} {Math.round((1 - session.defaultSplitRatio) * 100)}%
-            </span>
+            {!editingSplit ? (
+              <div className="flex items-center gap-2">
+                <span>
+                  Répartition :{" "}
+                  <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                    {session.creator.name ?? "Créateur"} {Math.round(session.defaultSplitRatio * 100)}% /{" "}
+                    {session.invitee?.name ?? "Invité"} {Math.round((1 - session.defaultSplitRatio) * 100)}%
+                  </span>
+                </span>
+                {isCreator && session.status === "OPEN" && (
+                  <button
+                    onClick={openSplitEditor}
+                    className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+                    aria-label="Modifier la répartition"
+                  >
+                    ✏️
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {splitError && (
+                  <p className="text-xs text-red-500 bg-red-50 dark:bg-red-950 rounded px-2 py-1">
+                    {splitError}
+                  </p>
+                )}
+                {!splitConfirm ? (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-zinc-500 dark:text-zinc-400">Ma part :</span>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="100"
+                      inputMode="numeric"
+                      value={newSplitPct}
+                      onChange={(e) => setNewSplitPct(e.target.value)}
+                      className="w-20 h-8 text-sm"
+                    />
+                    <span className="text-zinc-500 dark:text-zinc-400">%</span>
+                    <Button variant="outline" size="sm" onClick={() => setEditingSplit(false)}>
+                      Annuler
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => setSplitConfirm(true)}
+                      disabled={newSplitPct === String(myDefaultPct)}
+                    >
+                      Modifier
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-2 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                    <p className="text-xs text-amber-700 dark:text-amber-400 font-medium">
+                      Êtes-vous sûr de vouloir modifier la répartition par défaut ?
+                    </p>
+                    <p className="text-xs text-amber-600 dark:text-amber-500">
+                      Les {session.expenses.filter((e) => e.splitRatio === null).length} dépense(s) utilisant la répartition par défaut seront mises à jour.
+                      Les dépenses avec une répartition personnalisée ne seront pas affectées.
+                    </p>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => setSplitConfirm(false)}>
+                        Annuler
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={saveSplitRatio}
+                        disabled={splitSaving}
+                      >
+                        {splitSaving ? "Sauvegarde…" : "Confirmer"}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
