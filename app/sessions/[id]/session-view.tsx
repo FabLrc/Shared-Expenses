@@ -85,6 +85,11 @@ export function SessionView({
   const isCreator = session.creatorId === currentUserId;
   const partner = isCreator ? session.invitee : session.creator;
 
+  // "My share" of the default split — creator sees the ratio directly, invitee sees (1 - ratio)
+  const myDefaultPct = Math.round(
+    (isCreator ? session.defaultSplitRatio : 1 - session.defaultSplitRatio) * 100
+  );
+
   async function copyShareLink() {
     await navigator.clipboard.writeText(shareUrl);
     setCopied(true);
@@ -102,7 +107,9 @@ export function SessionView({
       body: JSON.stringify({
         label: formData.label,
         amount: parseFloat(formData.amount),
-        splitRatio: formData.splitRatio ? parseFloat(formData.splitRatio) / 100 : null,
+        splitRatio: formData.splitRatio
+          ? (isCreator ? parseFloat(formData.splitRatio) / 100 : 1 - parseFloat(formData.splitRatio) / 100)
+          : null,
         date: formData.date ? new Date(formData.date).toISOString() : undefined,
       }),
     });
@@ -141,7 +148,9 @@ export function SessionView({
     setEditForm({
       label: expense.label,
       amount: String(expense.amount),
-      splitRatio: expense.splitRatio != null ? String(Math.round(expense.splitRatio * 100)) : "",
+      splitRatio: expense.splitRatio != null
+        ? String(Math.round((isCreator ? expense.splitRatio : 1 - expense.splitRatio) * 100))
+        : "",
       date: new Date(expense.date).toISOString().split("T")[0],
     });
   }
@@ -157,7 +166,9 @@ export function SessionView({
       body: JSON.stringify({
         label: editForm.label,
         amount: parseFloat(editForm.amount),
-        splitRatio: editForm.splitRatio ? parseFloat(editForm.splitRatio) / 100 : null,
+        splitRatio: editForm.splitRatio
+          ? (isCreator ? parseFloat(editForm.splitRatio) / 100 : 1 - parseFloat(editForm.splitRatio) / 100)
+          : null,
         date: editForm.date ? new Date(editForm.date).toISOString() : undefined,
       }),
     });
@@ -284,8 +295,8 @@ export function SessionView({
           <div className="text-sm text-zinc-500 dark:text-zinc-400">
             Répartition :{" "}
             <span className="font-medium text-zinc-900 dark:text-zinc-100">
-              {Math.round(session.defaultSplitRatio * 100)}% /{" "}
-              {Math.round((1 - session.defaultSplitRatio) * 100)}%
+              {session.creator.name ?? "Créateur"} {Math.round(session.defaultSplitRatio * 100)}% /{" "}
+              {session.invitee?.name ?? "Invité"} {Math.round((1 - session.defaultSplitRatio) * 100)}%
             </span>
           </div>
         </div>
@@ -369,7 +380,7 @@ export function SessionView({
                               Ma part (
                               {formData.splitRatio
                                 ? `${formData.splitRatio}%`
-                                : `${Math.round(session.defaultSplitRatio * 100)}% par défaut`}
+                                : `${myDefaultPct}% par défaut`}
                               )
                             </Label>
                             <Input
@@ -378,7 +389,7 @@ export function SessionView({
                               inputMode="numeric"
                               min="0"
                               max="100"
-                              placeholder={`Laisser vide = ${Math.round(session.defaultSplitRatio * 100)}%`}
+                              placeholder={`Laisser vide = ${myDefaultPct}%`}
                               value={formData.splitRatio}
                               onChange={(e) => setFormData({ ...formData, splitRatio: e.target.value })}
                             />
@@ -413,6 +424,7 @@ export function SessionView({
               title="Mes dépenses"
               expenses={myExpenses}
               currentUserId={currentUserId}
+              isCreator={isCreator}
               defaultSplitRatio={session.defaultSplitRatio}
               formatCurrency={fmt}
               onDelete={deleteExpense}
@@ -434,6 +446,7 @@ export function SessionView({
                 title={`Dépenses de ${partner?.name ?? "l'invité"}`}
                 expenses={partnerExpenses}
                 currentUserId={currentUserId}
+                isCreator={isCreator}
                 defaultSplitRatio={session.defaultSplitRatio}
                 formatCurrency={fmt}
                 onDelete={deleteExpense}
@@ -522,6 +535,7 @@ function ExpenseList({
   title,
   expenses,
   currentUserId,
+  isCreator,
   defaultSplitRatio,
   formatCurrency,
   onDelete,
@@ -539,6 +553,7 @@ function ExpenseList({
   title: string;
   expenses: ExpenseWithAdder[];
   currentUserId: string;
+  isCreator: boolean;
   defaultSplitRatio: number;
   formatCurrency: (n: number) => string;
   onDelete: (id: string) => void;
@@ -566,10 +581,9 @@ function ExpenseList({
       <div className="space-y-2">
         {expenses.map((expense) => {
           const ratio = expense.splitRatio ?? defaultSplitRatio;
-          const myShare =
-            expense.addedById === currentUserId
-              ? expense.amount * ratio
-              : expense.amount * (1 - ratio);
+          const myShare = isCreator
+            ? expense.amount * ratio
+            : expense.amount * (1 - ratio);
           const isEditing = editingId === expense.id;
           const isOwn = expense.addedById === currentUserId;
 
@@ -652,7 +666,7 @@ function ExpenseList({
                   {new Date(expense.date).toLocaleDateString("fr-FR")}
                   {expense.splitRatio !== null && (
                     <span className="ml-2">
-                      • {Math.round(ratio * 100)}% personnalisé
+                      • ma part {Math.round(myShare / expense.amount * 100)}%
                     </span>
                   )}
                 </p>
@@ -968,7 +982,7 @@ function SummaryView({
                       <span className="text-zinc-400 dark:text-zinc-500">
                         {" "}•{" "}{new Date(expense.date).toLocaleDateString("fr-FR")}
                         {expense.splitRatio !== null && (
-                          <span> • {Math.round(ratio * 100)}% perso</span>
+                          <span> • {Math.round((isCurrentUserCreator ? ratio : 1 - ratio) * 100)}% / {Math.round((isCurrentUserCreator ? 1 - ratio : ratio) * 100)}%</span>
                         )}
                       </span>
                     </p>
