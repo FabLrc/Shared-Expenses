@@ -16,7 +16,8 @@ export async function POST(
 ) {
   const { id } = await params;
   const session = await auth();
-  if (!session?.user?.id) {
+  const userId = session?.user?.id;
+  if (!userId) {
     return NextResponse.json({ error: "Non authentifié." }, { status: 401 });
   }
 
@@ -31,8 +32,8 @@ export async function POST(
       if (!expSession) throw new TxError("Session introuvable.", 404);
 
       const isMember =
-        expSession.creatorId === session.user!.id ||
-        expSession.inviteeId === session.user!.id;
+        expSession.creatorId === userId ||
+        expSession.inviteeId === userId;
       if (!isMember) throw new TxError("Accès refusé.", 403);
       if (expSession.status === "CLOSED")
         throw new TxError("La session est fermée.", 400);
@@ -44,7 +45,7 @@ export async function POST(
           splitRatio: data.splitRatio ?? null,
           date: data.date ? new Date(data.date) : new Date(),
           sessionId: id,
-          addedById: session.user!.id,
+          addedById: userId,
         },
         include: {
           addedBy: { select: { id: true, name: true, image: true } },

@@ -58,7 +58,8 @@ export async function DELETE(
 ) {
   const { id } = await params;
   const session = await auth();
-  if (!session?.user?.id) {
+  const userId = session?.user?.id;
+  if (!userId) {
     return NextResponse.json({ error: "Non authentifié." }, { status: 401 });
   }
 
@@ -69,8 +70,8 @@ export async function DELETE(
       });
       if (!expSession) throw new TxError("Session introuvable.", 404);
 
-      const isCreator = expSession.creatorId === session.user!.id;
-      const isInvitee = expSession.inviteeId === session.user!.id;
+      const isCreator = expSession.creatorId === userId;
+      const isInvitee = expSession.inviteeId === userId;
 
       if (!isCreator && !isInvitee) throw new TxError("Accès refusé.", 403);
 
@@ -107,7 +108,8 @@ export async function PUT(
 ) {
   const { id } = await params;
   const session = await auth();
-  if (!session?.user?.id) {
+  const userId = session?.user?.id;
+  if (!userId) {
     return NextResponse.json({ error: "Non authentifié." }, { status: 401 });
   }
 
@@ -120,7 +122,7 @@ export async function PUT(
         where: { id },
       });
       if (!expSession) throw new TxError("Session introuvable.", 404);
-      if (expSession.creatorId !== session.user!.id)
+      if (expSession.creatorId !== userId)
         throw new TxError("Seul le créateur peut modifier la session.", 403);
 
       return tx.expenseSession.update({

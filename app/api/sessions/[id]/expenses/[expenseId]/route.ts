@@ -21,7 +21,8 @@ class TxError extends Error {
 export async function PUT(req: NextRequest, { params }: Params) {
   const { id, expenseId } = await params;
   const session = await auth();
-  if (!session?.user?.id) {
+  const userId = session?.user?.id;
+  if (!userId) {
     return NextResponse.json({ error: "Non authentifié." }, { status: 401 });
   }
 
@@ -37,7 +38,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
       if (!expense || expense.sessionId !== id)
         throw new TxError("Dépense introuvable.", 404);
-      if (expense.addedById !== session.user!.id)
+      if (expense.addedById !== userId)
         throw new TxError("Vous ne pouvez modifier que vos propres dépenses.", 403);
       if (expense.session.status === "CLOSED")
         throw new TxError("La session est fermée.", 400);
@@ -73,7 +74,8 @@ export async function PUT(req: NextRequest, { params }: Params) {
 export async function DELETE(_req: NextRequest, { params }: Params) {
   const { id, expenseId } = await params;
   const session = await auth();
-  if (!session?.user?.id) {
+  const userId = session?.user?.id;
+  if (!userId) {
     return NextResponse.json({ error: "Non authentifié." }, { status: 401 });
   }
 
@@ -86,7 +88,7 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
 
       if (!expense || expense.sessionId !== id)
         throw new TxError("Dépense introuvable.", 404);
-      if (expense.addedById !== session.user!.id)
+      if (expense.addedById !== userId)
         throw new TxError("Vous ne pouvez supprimer que vos propres dépenses.", 403);
       if (expense.session.status === "CLOSED")
         throw new TxError("La session est fermée.", 400);
