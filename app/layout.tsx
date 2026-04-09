@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
 import { NavigationProgress } from "@/components/navigation-progress";
+import { NotificationPrompt } from "@/components/notification-prompt";
 
 export const metadata: Metadata = {
   title: "SplitMate — Dépenses partagées",
@@ -46,6 +47,7 @@ export default function RootLayout({
         <NavigationProgress />
         {children}
         <PwaInstallPrompt />
+        <NotificationPrompt />
       </body>
     </html>
   );

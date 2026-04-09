@@ -24,6 +24,7 @@ model User {
   createdExpSessions  ExpenseSession[] @relation("Creator")
   invitedExpSessions  ExpenseSession[] @relation("Invitee")
   expenses            Expense[]
+  pushSubscriptions   PushSubscription[]
 }
 
 model Account {
@@ -75,10 +76,11 @@ model ExpenseSession {
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
 
-  creatorId String
-  creator   User    @relation("Creator", fields: [creatorId], references: [id], onDelete: Cascade)
-  inviteeId String?
-  invitee   User?   @relation("Invitee", fields: [inviteeId], references: [id], onDelete: SetNull)
+  creatorId      String
+  creator        User    @relation("Creator", fields: [creatorId], references: [id], onDelete: Cascade)
+  inviteeId      String?
+  invitee        User?   @relation("Invitee", fields: [inviteeId], references: [id], onDelete: SetNull)
+  lastNotifiedAt DateTime?
 
   expenses Expense[]
 
@@ -89,6 +91,19 @@ model ExpenseSession {
 enum SessionStatus {
   OPEN
   CLOSED
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Expense {
