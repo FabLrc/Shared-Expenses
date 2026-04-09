@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -78,6 +79,11 @@ export function SessionView({
 
   // Settle balance
   const [settling, setSettling] = useState(false);
+
+  // Delete / Leave session
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const router = useRouter();
 
   // Search
   const [search, setSearch] = useState("");
@@ -201,6 +207,16 @@ export function SessionView({
     }
     setClosingSession(false);
     setConfirmClose(false);
+  }
+
+  async function deleteOrLeaveSession() {
+    setDeleting(true);
+    const res = await fetch(`/api/sessions/${session.id}`, { method: "DELETE" });
+    if (res.ok) {
+      router.push("/dashboard");
+    }
+    setDeleting(false);
+    setConfirmDelete(false);
   }
 
   async function settleBalance(amount: number, splitRatio: number) {
@@ -524,6 +540,46 @@ export function SessionView({
                 )}
               </div>
             )}
+
+            {/* Delete session (creator) / Leave session (invitee) */}
+            <div className="border border-red-200 dark:border-red-800 rounded-xl p-4 space-y-3">
+              <div>
+                <p className="text-sm font-medium text-red-600 dark:text-red-400">
+                  {isCreator ? "Supprimer la session" : "Quitter la session"}
+                </p>
+                <p className="text-xs text-zinc-400 dark:text-zinc-300 mt-1">
+                  {isCreator
+                    ? "Toutes les dépenses associées seront définitivement supprimées. Cette action est irréversible."
+                    : "Vous ne ferez plus partie de cette session. Vos dépenses seront conservées."}
+                </p>
+              </div>
+              {!confirmDelete ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setConfirmDelete(true)}
+                  className="border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950"
+                >
+                  {isCreator ? "Supprimer la session" : "Quitter la session"}
+                </Button>
+              ) : (
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setConfirmDelete(false)}>
+                    Annuler
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                    onClick={deleteOrLeaveSession}
+                    disabled={deleting}
+                  >
+                    {deleting
+                      ? (isCreator ? "Suppression…" : "Départ…")
+                      : "Confirmer"}
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </main>
