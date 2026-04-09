@@ -21,46 +21,42 @@ export async function POST(
   }
 
   try {
-    const expSession = await prisma.expenseSession.findUnique({
-      where: { id },
-    });
-    if (!expSession) {
-      return NextResponse.json({ error: "Session introuvable." }, { status: 404 });
-    }
-
-    const isMember =
-      expSession.creatorId === session.user.id ||
-      expSession.inviteeId === session.user.id;
-    if (!isMember) {
-      return NextResponse.json({ error: "Accès refusé." }, { status: 403 });
-    }
-
-    if (expSession.status === "CLOSED") {
-      return NextResponse.json(
-        { error: "La session est fermée." },
-        { status: 400 }
-      );
-    }
-
     const body = await req.json();
     const data = addExpenseSchema.parse(body);
 
-    const expense = await prisma.expense.create({
-      data: {
-        label: data.label,
-        amount: data.amount,
-        splitRatio: data.splitRatio ?? null,
-        date: data.date ? new Date(data.date) : new Date(),
-        sessionId: id,
-        addedById: session.user.id,
-      },
-      include: {
-        addedBy: { select: { id: true, name: true, image: true } },
-      },
+    const expense = await prisma.$transaction(async (tx) => {
+      const expSession = await tx.expenseSession.findUnique({
+        where: { id },
+      });
+      if (!expSession) throw new TxError("Session introuvable.", 404);
+
+      const isMember =
+        expSession.creatorId === session.user!.id ||
+        expSession.inviteeId === session.user!.id;
+      if (!isMember) throw new TxError("Accès refusé.", 403);
+      if (expSession.status === "CLOSED")
+        throw new TxError("La session est fermée.", 400);
+
+      return tx.expense.create({
+        data: {
+          label: data.label,
+          amount: data.amount,
+          splitRatio: data.splitRatio ?? null,
+          date: data.date ? new Date(data.date) : new Date(),
+          sessionId: id,
+          addedById: session.user!.id,
+        },
+        include: {
+          addedBy: { select: { id: true, name: true, image: true } },
+        },
+      });
     });
 
     return NextResponse.json(expense, { status: 201 });
   } catch (error) {
+    if (error instanceof TxError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: "Données invalides.", issues: error.issues },
@@ -69,5 +65,11 @@ export async function POST(
     }
     console.error(error);
     return NextResponse.json({ error: "Erreur serveur." }, { status: 500 });
+  }
+}
+
+class TxError extends Error {
+  constructor(message: string, public status: number) {
+    super(message);
   }
 }

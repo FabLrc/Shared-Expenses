@@ -27,20 +27,32 @@ export async function POST(
     );
   }
 
-  if (expSession.inviteeId && expSession.inviteeId !== session.user.id) {
+  if (expSession.inviteeId === session.user.id) {
+    return NextResponse.json(expSession);
+  }
+
+  if (expSession.inviteeId) {
     return NextResponse.json(
       { error: "Cette session a déjà un invité." },
       { status: 400 }
     );
   }
 
-  if (expSession.inviteeId === session.user.id) {
-    return NextResponse.json(expSession);
+  // Atomic update: only succeeds if inviteeId is still null (no race condition)
+  const { count } = await prisma.expenseSession.updateMany({
+    where: { id, inviteeId: null },
+    data: { inviteeId: session.user.id },
+  });
+
+  if (count === 0) {
+    return NextResponse.json(
+      { error: "Cette session a déjà un invité." },
+      { status: 400 }
+    );
   }
 
-  const updated = await prisma.expenseSession.update({
+  const updated = await prisma.expenseSession.findUnique({
     where: { id },
-    data: { inviteeId: session.user.id },
     include: {
       creator: { select: { id: true, name: true, image: true } },
       invitee: { select: { id: true, name: true, image: true } },

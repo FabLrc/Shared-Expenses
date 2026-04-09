@@ -12,6 +12,12 @@ const updateExpenseSchema = z.object({
 
 type Params = { params: Promise<{ id: string; expenseId: string }> };
 
+class TxError extends Error {
+  constructor(message: string, public status: number) {
+    super(message);
+  }
+}
+
 export async function PUT(req: NextRequest, { params }: Params) {
   const { id, expenseId } = await params;
   const session = await auth();
@@ -20,37 +26,39 @@ export async function PUT(req: NextRequest, { params }: Params) {
   }
 
   try {
-    const expense = await prisma.expense.findUnique({
-      where: { id: expenseId },
-      include: { session: true },
-    });
-
-    if (!expense || expense.sessionId !== id) {
-      return NextResponse.json({ error: "Dépense introuvable." }, { status: 404 });
-    }
-    if (expense.addedById !== session.user.id) {
-      return NextResponse.json({ error: "Vous ne pouvez modifier que vos propres dépenses." }, { status: 403 });
-    }
-    if (expense.session.status === "CLOSED") {
-      return NextResponse.json({ error: "La session est fermée." }, { status: 400 });
-    }
-
     const body = await req.json();
     const data = updateExpenseSchema.parse(body);
 
-    const updated = await prisma.expense.update({
-      where: { id: expenseId },
-      data: {
-        ...data,
-        date: data.date ? new Date(data.date) : undefined,
-      },
-      include: {
-        addedBy: { select: { id: true, name: true, image: true } },
-      },
+    const updated = await prisma.$transaction(async (tx) => {
+      const expense = await tx.expense.findUnique({
+        where: { id: expenseId },
+        include: { session: true },
+      });
+
+      if (!expense || expense.sessionId !== id)
+        throw new TxError("Dépense introuvable.", 404);
+      if (expense.addedById !== session.user!.id)
+        throw new TxError("Vous ne pouvez modifier que vos propres dépenses.", 403);
+      if (expense.session.status === "CLOSED")
+        throw new TxError("La session est fermée.", 400);
+
+      return tx.expense.update({
+        where: { id: expenseId },
+        data: {
+          ...data,
+          date: data.date ? new Date(data.date) : undefined,
+        },
+        include: {
+          addedBy: { select: { id: true, name: true, image: true } },
+        },
+      });
     });
 
     return NextResponse.json(updated);
   } catch (error) {
+    if (error instanceof TxError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: "Données invalides.", issues: error.issues },
@@ -62,28 +70,36 @@ export async function PUT(req: NextRequest, { params }: Params) {
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: Params) {
+export async function DELETE(_req: NextRequest, { params }: Params) {
   const { id, expenseId } = await params;
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Non authentifié." }, { status: 401 });
   }
 
-  const expense = await prisma.expense.findUnique({
-    where: { id: expenseId },
-    include: { session: true },
-  });
+  try {
+    await prisma.$transaction(async (tx) => {
+      const expense = await tx.expense.findUnique({
+        where: { id: expenseId },
+        include: { session: true },
+      });
 
-  if (!expense || expense.sessionId !== id) {
-    return NextResponse.json({ error: "Dépense introuvable." }, { status: 404 });
-  }
-  if (expense.addedById !== session.user.id) {
-    return NextResponse.json({ error: "Vous ne pouvez supprimer que vos propres dépenses." }, { status: 403 });
-  }
-  if (expense.session.status === "CLOSED") {
-    return NextResponse.json({ error: "La session est fermée." }, { status: 400 });
-  }
+      if (!expense || expense.sessionId !== id)
+        throw new TxError("Dépense introuvable.", 404);
+      if (expense.addedById !== session.user!.id)
+        throw new TxError("Vous ne pouvez supprimer que vos propres dépenses.", 403);
+      if (expense.session.status === "CLOSED")
+        throw new TxError("La session est fermée.", 400);
 
-  await prisma.expense.delete({ where: { id: expenseId } });
-  return new NextResponse(null, { status: 204 });
+      await tx.expense.delete({ where: { id: expenseId } });
+    });
+
+    return new NextResponse(null, { status: 204 });
+  } catch (error) {
+    if (error instanceof TxError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
+    console.error(error);
+    return NextResponse.json({ error: "Erreur serveur." }, { status: 500 });
+  }
 }

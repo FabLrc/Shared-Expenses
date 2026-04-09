@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -47,6 +47,34 @@ export function SessionView({
   const [session, setSession] = useState(initialSession);
   const [tab, setTab] = useState<Tab>("expenses");
   const [copied, setCopied] = useState(false);
+
+  // Auto-refresh: poll every 15s + refetch on window focus
+  const refreshing = useRef(false);
+  const refreshSession = useCallback(async () => {
+    if (refreshing.current) return;
+    refreshing.current = true;
+    try {
+      const res = await fetch(`/api/sessions/${initialSession.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setSession(data);
+      }
+    } catch {
+      // silently ignore network errors during background refresh
+    } finally {
+      refreshing.current = false;
+    }
+  }, [initialSession.id]);
+
+  useEffect(() => {
+    const interval = setInterval(refreshSession, 15_000);
+    const onFocus = () => refreshSession();
+    window.addEventListener("focus", onFocus);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, [refreshSession]);
 
   // Add expense
   const [showForm, setShowForm] = useState(false);

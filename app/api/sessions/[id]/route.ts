@@ -46,6 +46,12 @@ export async function GET(
   return NextResponse.json(result.expSession);
 }
 
+class TxError extends Error {
+  constructor(message: string, public status: number) {
+    super(message);
+  }
+}
+
 export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -56,32 +62,36 @@ export async function DELETE(
     return NextResponse.json({ error: "Non authentifié." }, { status: 401 });
   }
 
-  const expSession = await prisma.expenseSession.findUnique({
-    where: { id },
-  });
-  if (!expSession) {
-    return NextResponse.json({ error: "Session introuvable." }, { status: 404 });
-  }
+  try {
+    await prisma.$transaction(async (tx) => {
+      const expSession = await tx.expenseSession.findUnique({
+        where: { id },
+      });
+      if (!expSession) throw new TxError("Session introuvable.", 404);
 
-  const isCreator = expSession.creatorId === session.user.id;
-  const isInvitee = expSession.inviteeId === session.user.id;
+      const isCreator = expSession.creatorId === session.user!.id;
+      const isInvitee = expSession.inviteeId === session.user!.id;
 
-  if (!isCreator && !isInvitee) {
-    return NextResponse.json({ error: "Accès refusé." }, { status: 403 });
-  }
+      if (!isCreator && !isInvitee) throw new TxError("Accès refusé.", 403);
 
-  if (isCreator) {
-    // Creator deletes the entire session (expenses cascade-deleted by Prisma)
-    await prisma.expenseSession.delete({ where: { id } });
+      if (isCreator) {
+        await tx.expenseSession.delete({ where: { id } });
+      } else {
+        await tx.expenseSession.update({
+          where: { id },
+          data: { inviteeId: null },
+        });
+      }
+    });
+
     return new NextResponse(null, { status: 204 });
+  } catch (error) {
+    if (error instanceof TxError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
+    console.error(error);
+    return NextResponse.json({ error: "Erreur serveur." }, { status: 500 });
   }
-
-  // Invitee leaves the session — clear inviteeId
-  await prisma.expenseSession.update({
-    where: { id },
-    data: { inviteeId: null },
-  });
-  return new NextResponse(null, { status: 204 });
 }
 
 const updateSessionSchema = z.object({
@@ -102,30 +112,32 @@ export async function PUT(
   }
 
   try {
-    const expSession = await prisma.expenseSession.findUnique({
-      where: { id },
-    });
-    if (!expSession) {
-      return NextResponse.json({ error: "Session introuvable." }, { status: 404 });
-    }
-    if (expSession.creatorId !== session.user.id) {
-      return NextResponse.json({ error: "Seul le créateur peut modifier la session." }, { status: 403 });
-    }
-
     const body = await req.json();
     const data = updateSessionSchema.parse(body);
 
-    const updated = await prisma.expenseSession.update({
-      where: { id },
-      data,
-      include: {
-        creator: { select: { id: true, name: true, image: true } },
-        invitee: { select: { id: true, name: true, image: true } },
-      },
+    const updated = await prisma.$transaction(async (tx) => {
+      const expSession = await tx.expenseSession.findUnique({
+        where: { id },
+      });
+      if (!expSession) throw new TxError("Session introuvable.", 404);
+      if (expSession.creatorId !== session.user!.id)
+        throw new TxError("Seul le créateur peut modifier la session.", 403);
+
+      return tx.expenseSession.update({
+        where: { id },
+        data,
+        include: {
+          creator: { select: { id: true, name: true, image: true } },
+          invitee: { select: { id: true, name: true, image: true } },
+        },
+      });
     });
 
     return NextResponse.json(updated);
   } catch (error) {
+    if (error instanceof TxError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: "Données invalides.", issues: error.issues },
