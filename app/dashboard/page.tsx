@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { signOut } from "@/lib/auth";
 import { formatCurrency } from "@/lib/calculations";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { SessionActions } from "./session-actions";
 
 const PAGE_SIZE = 10;
 
@@ -100,7 +101,7 @@ export default async function DashboardPage({
             <div className="space-y-3">
               {sessions.map((s) => {
                 const totalAmount = s.expenses.reduce((sum, e) => sum + e.amount, 0);
-                const isCreator = s.creatorId === session.user!.id;
+                const isCreator = s.creatorId === userId;
                 const partner = isCreator ? s.invitee : s.creator;
 
                 return (
@@ -109,15 +110,18 @@ export default async function DashboardPage({
                       <CardHeader className="pb-2">
                         <div className="flex items-center justify-between">
                           <CardTitle className="text-base">{s.title}</CardTitle>
-                          <span
-                            className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                              s.status === "OPEN"
-                                ? "bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300"
-                                : "bg-zinc-100 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300"
-                            }`}
-                          >
-                            {s.status === "OPEN" ? "Active" : "Fermée"}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                s.status === "OPEN"
+                                  ? "bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300"
+                                  : "bg-zinc-100 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300"
+                              }`}
+                            >
+                              {s.status === "OPEN" ? "Active" : "Fermée"}
+                            </span>
+                            <SessionActions sessionId={s.id} isCreator={isCreator} />
+                          </div>
                         </div>
                         <CardDescription>
                           {partner
