@@ -1,11 +1,20 @@
 import webpush from "web-push";
 import { prisma } from "@/lib/prisma";
 
-webpush.setVapidDetails(
-  "mailto:" + (process.env.VAPID_CONTACT_EMAIL ?? "noreply@example.com"),
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!
-);
+let initialized = false;
+
+function ensureInitialized() {
+  if (initialized) return;
+  const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+  const privateKey = process.env.VAPID_PRIVATE_KEY;
+  if (!publicKey || !privateKey) return;
+  webpush.setVapidDetails(
+    "mailto:" + (process.env.VAPID_CONTACT_EMAIL ?? "noreply@example.com"),
+    publicKey,
+    privateKey
+  );
+  initialized = true;
+}
 
 interface PushPayload {
   title: string;
@@ -18,6 +27,9 @@ interface PushPayload {
  * Automatically removes expired/invalid subscriptions (410 Gone).
  */
 export async function sendPushToUser(userId: string, payload: PushPayload) {
+  ensureInitialized();
+  if (!initialized) return { sent: 0, total: 0 };
+
   const subs = await prisma.pushSubscription.findMany({
     where: { userId },
   });
