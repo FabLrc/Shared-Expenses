@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/react";
 import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
 import { NavigationProgress } from "@/components/navigation-progress";
 import { NotificationPrompt } from "@/components/notification-prompt";
@@ -46,6 +47,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col antialiased bg-zinc-50 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">
         <NavigationProgress />
         {children}
+        <Analytics />
         <PwaInstallPrompt />
         <NotificationPrompt />
       </body>
