@@ -12,10 +12,12 @@ const providers: Provider[] = [
   Google({
     clientId: process.env.GOOGLE_CLIENT_ID!,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    checks: ["state"],
   }),
   Discord({
     clientId: process.env.DISCORD_CLIENT_ID!,
     clientSecret: process.env.DISCORD_CLIENT_SECRET!,
+    checks: ["state"],
   }),
   Credentials({
     credentials: {
@@ -52,6 +54,7 @@ export const authConfig: NextAuthConfig = {
   adapter: PrismaAdapter(prisma),
   providers,
   trustHost: true,
+  useSecureCookies: process.env.NODE_ENV === "production",
   session: {
     strategy: "jwt",
   },
