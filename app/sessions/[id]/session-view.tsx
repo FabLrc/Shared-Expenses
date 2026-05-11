@@ -70,6 +70,7 @@ export function SessionView({
   }, [initialSession.id]);
 
   useEffect(() => {
+    refreshSession();
     const interval = setInterval(refreshSession, 15_000);
     const onFocus = () => refreshSession();
     window.addEventListener("focus", onFocus);
