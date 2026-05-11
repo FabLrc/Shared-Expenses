@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, forwardRef } from "react";
 import { Input } from "@/components/ui/input";
 
 interface Props {
@@ -11,7 +11,8 @@ interface Props {
   id?: string;
 }
 
-export function ExpenseLabelInput({ value, onChange, placeholder, required, id }: Props) {
+export const ExpenseLabelInput = forwardRef<HTMLInputElement, Props>(
+  function ExpenseLabelInput({ value, onChange, placeholder, required, id }: Props, ref) {
   const [open, setOpen] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [highlightIndex, setHighlightIndex] = useState(-1);
@@ -112,7 +113,11 @@ export function ExpenseLabelInput({ value, onChange, placeholder, required, id }
   return (
     <div className="relative">
       <Input
-        ref={inputRef}
+        ref={(node) => {
+          (inputRef as React.MutableRefObject<HTMLInputElement | null>).current = node;
+          if (typeof ref === "function") ref(node);
+          else if (ref) ref.current = node;
+        }}
         id={id}
         type="text"
         autoComplete="off"
@@ -153,4 +158,4 @@ export function ExpenseLabelInput({ value, onChange, placeholder, required, id }
       )}
     </div>
   );
-}
+});

@@ -49,6 +49,8 @@ export function SessionView({
   const [tab, setTab] = useState<Tab>("expenses");
   const [copied, setCopied] = useState(false);
 
+  const titleRef = useRef<HTMLInputElement>(null);
+
   // Auto-refresh: poll every 15s + refetch on window focus
   const refreshing = useRef(false);
   const refreshSession = useCallback(async () => {
@@ -166,8 +168,8 @@ export function SessionView({
     const newExpense: ExpenseWithAdder = await res.json();
     setSession((prev) => ({ ...prev, expenses: [newExpense, ...prev.expenses] }));
     setFormData({ label: "", amount: "", splitRatio: "", date: new Date().toISOString().split("T")[0] });
-    setShowForm(false);
     setFormLoading(false);
+    titleRef.current?.focus();
   }
 
   async function deleteExpense(expenseId: string) {
@@ -502,6 +504,7 @@ export function SessionView({
                           <div className="space-y-1.5">
                             <Label htmlFor="label">Titre</Label>
                             <ExpenseLabelInput
+                              ref={titleRef}
                               id="label"
                               placeholder="Ex: Restaurant, Courses…"
                               value={formData.label}
