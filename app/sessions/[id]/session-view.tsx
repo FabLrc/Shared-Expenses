@@ -90,6 +90,10 @@ export function SessionView({
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState("");
 
+  useEffect(() => {
+    if (showForm) titleRef.current?.focus();
+  }, [showForm]);
+
   // Delete
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
