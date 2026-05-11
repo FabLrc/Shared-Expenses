@@ -248,6 +248,7 @@ export function SessionView({
     setDeleting(true);
     const res = await fetch(`/api/sessions/${session.id}`, { method: "DELETE" });
     if (res.ok) {
+      router.refresh();
       router.push("/dashboard");
     }
     setDeleting(false);

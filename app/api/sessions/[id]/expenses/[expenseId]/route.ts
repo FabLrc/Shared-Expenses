@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 const updateExpenseSchema = z.object({
@@ -55,6 +56,9 @@ export async function PUT(req: NextRequest, { params }: Params) {
       });
     });
 
+    revalidatePath(`/sessions/${id}`);
+    revalidatePath("/dashboard");
+
     return NextResponse.json(updated);
   } catch (error) {
     if (error instanceof TxError) {
@@ -95,6 +99,9 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
 
       await tx.expense.delete({ where: { id: expenseId } });
     });
+
+    revalidatePath(`/sessions/${id}`);
+    revalidatePath("/dashboard");
 
     return new NextResponse(null, { status: 204 });
   } catch (error) {

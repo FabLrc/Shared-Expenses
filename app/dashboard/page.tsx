@@ -9,6 +9,8 @@ import { formatCurrency } from "@/lib/calculations";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SessionActions } from "./session-actions";
 
+export const dynamic = "force-dynamic";
+
 const PAGE_SIZE = 10;
 
 export default async function DashboardPage({

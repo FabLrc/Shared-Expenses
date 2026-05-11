@@ -4,6 +4,8 @@ import { redirect, notFound } from "next/navigation";
 import { calculateSessionSummary } from "@/lib/calculations";
 import { SessionView } from "./session-view";
 
+export const dynamic = "force-dynamic";
+
 export default async function SessionPage({
   params,
 }: {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 const addExpenseSchema = z.object({
@@ -52,6 +53,9 @@ export async function POST(
         },
       });
     });
+
+    revalidatePath(`/sessions/${id}`);
+    revalidatePath("/dashboard");
 
     return NextResponse.json(expense, { status: 201 });
   } catch (error) {

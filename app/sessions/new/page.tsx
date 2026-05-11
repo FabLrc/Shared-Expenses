@@ -43,6 +43,7 @@ export default function NewSessionPage() {
     }
 
     const session = await res.json();
+    router.refresh();
     router.push(`/sessions/${session.id}`);
   }
 

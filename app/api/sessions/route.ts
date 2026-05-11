@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { revalidatePath } from "next/cache";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 
@@ -57,6 +58,8 @@ export async function POST(req: NextRequest) {
         invitee: { select: { id: true, name: true, image: true } },
       },
     });
+
+    revalidatePath("/dashboard");
 
     return NextResponse.json(expenseSession, { status: 201 });
   } catch (error) {
