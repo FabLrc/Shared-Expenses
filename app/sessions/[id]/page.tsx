@@ -40,6 +40,7 @@ export default async function SessionPage({
 
   return (
     <SessionView
+      key={expSession.id}
       expSession={JSON.parse(JSON.stringify(expSession))}
       currentUserId={session.user.id}
       summary={summary}
