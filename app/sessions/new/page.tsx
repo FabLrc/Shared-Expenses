@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +10,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 const CURRENCIES = ["EUR", "USD", "GBP", "CHF", "CAD"];
 
 export default function NewSessionPage() {
-  const router = useRouter();
   const [form, setForm] = useState({
     title: "",
     defaultSplitRatio: 50,
@@ -43,8 +41,7 @@ export default function NewSessionPage() {
     }
 
     const session = await res.json();
-    router.refresh();
-    router.push(`/sessions/${session.id}`);
+    window.location.href = `/sessions/${session.id}`;
   }
 
   return (
