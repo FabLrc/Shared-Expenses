@@ -487,6 +487,15 @@ export function SessionView({
         {/* EXPENSES TAB */}
         {tab === "expenses" && (
           <div className="space-y-4">
+            {/* Search */}
+            {session.expenses.length > 0 && (
+              <Input
+                placeholder="Rechercher une dépense…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            )}
+
             {session.status === "OPEN" && (
               <>
                 {!showForm ? (
@@ -575,15 +584,6 @@ export function SessionView({
                   </Card>
                 )}
               </>
-            )}
-
-            {/* Search */}
-            {session.expenses.length > 0 && (
-              <Input
-                placeholder="Rechercher une dépense…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
             )}
 
             {/* My expenses */}
