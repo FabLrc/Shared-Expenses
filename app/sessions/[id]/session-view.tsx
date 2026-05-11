@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { ExpenseLabelInput } from "@/components/expense-label-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -500,11 +501,11 @@ export function SessionView({
                         <div className="space-y-3">
                           <div className="space-y-1.5">
                             <Label htmlFor="label">Description</Label>
-                            <Input
+                            <ExpenseLabelInput
                               id="label"
                               placeholder="Ex: Restaurant, Courses…"
                               value={formData.label}
-                              onChange={(e) => setFormData({ ...formData, label: e.target.value })}
+                              onChange={(val) => setFormData({ ...formData, label: val })}
                               required
                             />
                           </div>
@@ -798,9 +799,9 @@ function ExpenseList({
                     <div className="space-y-3">
                       <div className="space-y-1.5">
                         <Label>Description</Label>
-                        <Input
+                        <ExpenseLabelInput
                           value={editForm.label}
-                          onChange={(e) => onEditChange("label", e.target.value)}
+                          onChange={(val) => onEditChange("label", val)}
                           required
                         />
                       </div>
