@@ -500,7 +500,7 @@ export function SessionView({
                         )}
                         <div className="space-y-3">
                           <div className="space-y-1.5">
-                            <Label htmlFor="label">Description</Label>
+                            <Label htmlFor="label">Titre</Label>
                             <ExpenseLabelInput
                               id="label"
                               placeholder="Ex: Restaurant, Courses…"
@@ -798,7 +798,7 @@ function ExpenseList({
                     )}
                     <div className="space-y-3">
                       <div className="space-y-1.5">
-                        <Label>Description</Label>
+                        <Label>Titre</Label>
                         <ExpenseLabelInput
                           value={editForm.label}
                           onChange={(val) => onEditChange("label", val)}
