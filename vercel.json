@@ -1,5 +1,5 @@
 {
-  "buildCommand": "next build --webpack",
+  "buildCommand": "prisma migrate deploy && next build --webpack",
   "framework": "nextjs",
   "crons": [
     {
