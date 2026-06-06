@@ -43,6 +43,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - **You cannot set DB url in `schema.prisma`** — Prisma 7 requires it via driver adapter in code
 - **No tests exist** — no test runner, no test files anywhere
 - **No CI pipeline** — no `.github/` directory
+- **Migrations are NOT applied automatically on deploy** — the Vercel `buildCommand` only runs `next build`. After creating a migration, you MUST run `npx prisma migrate deploy` against prod **before/at deploy time**, otherwise the generated client will query columns that don't exist (e.g. `P2022 ColumnNotFound`) and the app goes down. `DATABASE_URL` is not exposed at build time on Vercel — only `POSTGRES_URL` (direct) is reliably present, so run migrations from a shell with the direct `postgres://` URL.
 - **Vercel cron** triggers `GET /api/cron/notify` daily at 8:00 UTC
 - Push notifications require `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` env vars; generate with `node scripts/generate-vapid-keys.mjs`
 - The API route `GET /api/sessions/[id]` is called by client polling — returns same shape as Prisma query with relations
