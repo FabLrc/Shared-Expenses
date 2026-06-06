@@ -3,10 +3,15 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { format, parseISO } from "date-fns";
+import { fr } from "date-fns/locale";
+import { CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import { ExpenseLabelInput } from "@/components/expense-label-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Card,
   CardContent,
@@ -18,6 +23,7 @@ import { formatCurrency } from "@/lib/calculations";
 import type { SessionSummary } from "@/lib/calculations";
 import type { Expense, ExpenseSession, User } from "@prisma/client";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { cn } from "@/lib/utils";
 
 type UserInfo = Pick<User, "id" | "name" | "image">;
 type ExpenseWithAdder = Expense & { addedBy: UserInfo };
@@ -36,6 +42,53 @@ interface Props {
 }
 
 type Tab = "expenses" | "summary";
+
+function DatePicker({
+  value,
+  onChange,
+}: {
+  value: string; // "YYYY-MM-DD"
+  onChange: (value: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const selected = value ? parseISO(value) : undefined;
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className={cn(
+            "flex h-9 w-full items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-1 text-left text-sm",
+            "dark:border-zinc-700 dark:bg-zinc-950",
+            "hover:bg-zinc-50 dark:hover:bg-zinc-800",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400",
+            "transition-colors",
+            !selected && "text-zinc-400 dark:text-zinc-500"
+          )}
+        >
+          <CalendarIcon className="h-4 w-4 shrink-0 text-zinc-400 dark:text-zinc-500" />
+          {selected
+            ? format(selected, "d MMMM yyyy", { locale: fr })
+            : "Choisir une date"}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent>
+        <Calendar
+          mode="single"
+          selected={selected}
+          onSelect={(date) => {
+            if (date) {
+              onChange(format(date, "yyyy-MM-dd"));
+              setOpen(false);
+            }
+          }}
+          defaultMonth={selected}
+        />
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 export function SessionView({
   expSession: initialSession,
@@ -552,12 +605,10 @@ export function SessionView({
                               />
                             </div>
                             <div className="space-y-1.5">
-                              <Label htmlFor="date">Date</Label>
-                              <Input
-                                id="date"
-                                type="date"
+                              <Label>Date</Label>
+                              <DatePicker
                                 value={formData.date}
-                                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                                onChange={(val) => setFormData({ ...formData, date: val })}
                               />
                             </div>
                           </div>
@@ -838,10 +889,9 @@ function ExpenseList({
                         </div>
                         <div className="space-y-1.5">
                           <Label>Date</Label>
-                          <Input
-                            type="date"
+                          <DatePicker
                             value={editForm.date}
-                            onChange={(e) => onEditChange("date", e.target.value)}
+                            onChange={(val) => onEditChange("date", val)}
                           />
                         </div>
                       </div>
