@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { ExpenseLabelInput } from "@/components/expense-label-input";
@@ -193,6 +193,17 @@ export function SessionView({
 
   // Search
   const [search, setSearch] = useState("");
+  const [showSearch, setShowSearch] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (showSearch) searchInputRef.current?.focus();
+  }, [showSearch]);
+
+  function closeSearch() {
+    setSearch("");
+    setShowSearch(false);
+  }
 
   const isCreator = session.creatorId === currentUserId;
   const partner = isCreator ? session.invitee : session.creator;
@@ -530,6 +541,42 @@ export function SessionView({
           </div>
         </div>
 
+        {/* Search toggle */}
+        {session.expenses.length > 0 && (
+          <div className="flex items-center justify-end -mt-2">
+            {showSearch ? (
+              <div className="flex items-center gap-2 w-full">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 pointer-events-none" />
+                  <Input
+                    ref={searchInputRef}
+                    placeholder="Rechercher une dépense…"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    onKeyDown={(e) => e.key === "Escape" && closeSearch()}
+                    className="pl-9"
+                  />
+                </div>
+                <button
+                  onClick={closeSearch}
+                  className="flex items-center justify-center w-9 h-9 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors shrink-0"
+                  aria-label="Fermer la recherche"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowSearch(true)}
+                className="flex items-center justify-center w-9 h-9 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                aria-label="Rechercher une dépense"
+              >
+                <Search className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Tabs */}
         <div className="flex border-b border-zinc-200 dark:border-zinc-700">
           {(["expenses", "summary"] as Tab[]).map((t) => (
@@ -550,15 +597,6 @@ export function SessionView({
         {/* EXPENSES TAB */}
         {tab === "expenses" && (
           <div className="space-y-4">
-            {/* Search */}
-            {session.expenses.length > 0 && (
-              <Input
-                placeholder="Rechercher une dépense…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            )}
-
             {session.status === "OPEN" && (
               <>
                 {!showForm ? (
