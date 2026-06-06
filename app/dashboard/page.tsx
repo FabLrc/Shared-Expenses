@@ -8,6 +8,7 @@ import { signOut } from "@/lib/auth";
 import { formatCurrency } from "@/lib/calculations";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SessionActions } from "./session-actions";
+import { DashboardRefresh } from "./dashboard-refresh";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +48,7 @@ export default async function DashboardPage({
 
   return (
     <div className="min-h-screen dark:bg-zinc-900">
+      <DashboardRefresh />
       <header className="border-b border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800/60 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
           <Link href="/dashboard" className="text-lg font-bold">

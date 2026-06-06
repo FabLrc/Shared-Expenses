@@ -4,6 +4,10 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
+// This route backs the client polling on the session page — it must never be
+// served from any cache layer (CDN, Next data cache, or browser HTTP cache).
+export const dynamic = "force-dynamic";
+
 async function getSessionAndCheckAccess(
   sessionId: string,
   userId: string
@@ -44,7 +48,9 @@ export async function GET(
     return NextResponse.json({ error: result.error }, { status: result.status });
   }
 
-  return NextResponse.json(result.expSession);
+  return NextResponse.json(result.expSession, {
+    headers: { "Cache-Control": "no-store" },
+  });
 }
 
 class TxError extends Error {

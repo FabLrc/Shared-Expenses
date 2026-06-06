@@ -51,13 +51,18 @@ export function SessionView({
 
   const titleRef = useRef<HTMLInputElement>(null);
 
-  // Auto-refresh: poll every 15s + refetch on window focus
+  // Auto-refresh: near-real-time poll (3s) + refetch on window focus.
+  // Polling is skipped while the tab is hidden to avoid wasted requests; the
+  // focus/visibility listeners trigger an immediate refresh when the user comes
+  // back, so the data is fresh the moment the tab is visible again.
   const refreshing = useRef(false);
   const refreshSession = useCallback(async () => {
-    if (refreshing.current) return;
+    if (refreshing.current || document.hidden) return;
     refreshing.current = true;
     try {
-      const res = await fetch(`/api/sessions/${initialSession.id}`);
+      const res = await fetch(`/api/sessions/${initialSession.id}`, {
+        cache: "no-store",
+      });
       if (res.ok) {
         const data = await res.json();
         setSession(data);
@@ -71,12 +76,17 @@ export function SessionView({
 
   useEffect(() => {
     refreshSession();
-    const interval = setInterval(refreshSession, 15_000);
+    const interval = setInterval(refreshSession, 3_000);
     const onFocus = () => refreshSession();
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refreshSession();
+    };
     window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
       clearInterval(interval);
       window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, [refreshSession]);
 
