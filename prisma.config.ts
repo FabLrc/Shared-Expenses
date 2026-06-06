@@ -9,6 +9,15 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env.DATABASE_URL ?? "",
+    // Mirror the resolution order used by the runtime client (lib/prisma.ts):
+    // on Vercel the direct connection is exposed as POSTGRES_URL, while
+    // DATABASE_URL may be unset at build time. All of these point to a direct
+    // PostgreSQL connection usable by migrations (the app uses adapter-pg, not
+    // Accelerate, so the runtime URL is always a direct connection).
+    url:
+      process.env.DATABASE_URL ??
+      process.env.POSTGRES_URL_NON_POOLING ??
+      process.env.POSTGRES_URL ??
+      "",
   },
 });
