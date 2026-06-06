@@ -47,7 +47,40 @@ main {
   animation: page-in 0.2s ease-out both;
 }
 
-/* Prevent iOS Safari from zooming in on input focus (requires >= 16px) */
+/* ── Calendar (react-day-picker v10) ─────────────────────────────────────── */
+/* In v10, state flags (selected, today, outside, disabled) are set as
+   data-attributes on the Day wrapper (td), not on the button inside.
+   We target the button via CSS child selectors from the wrapper. */
+
+[data-calendar] [data-selected] button {
+  @apply bg-zinc-900 text-white;
+}
+[data-calendar] [data-selected] button:hover {
+  @apply bg-zinc-800;
+}
+.dark [data-calendar] [data-selected] button {
+  @apply bg-zinc-100 text-zinc-900;
+}
+.dark [data-calendar] [data-selected] button:hover {
+  @apply bg-zinc-200;
+}
+
+[data-calendar] [data-today]:not([data-selected]) button {
+  @apply font-semibold text-zinc-900;
+}
+.dark [data-calendar] [data-today]:not([data-selected]) button {
+  @apply text-zinc-100;
+}
+
+[data-calendar] [data-outside] button {
+  @apply opacity-30 pointer-events-none;
+}
+
+[data-calendar] [data-disabled] button {
+  @apply opacity-30 pointer-events-none;
+}
+
+/* ── Prevent iOS Safari from zooming in on input focus (requires >= 16px) */
 @media (max-width: 767px) {
   input:not([type="range"]),
   select,
