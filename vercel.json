@@ -1,5 +1,5 @@
 {
-  "buildCommand": "next build --webpack",
+  "buildCommand": "node scripts/migrate-deploy.mjs && next build --webpack",
   "framework": "nextjs",
   "crons": [
     {
