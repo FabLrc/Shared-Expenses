@@ -16,11 +16,12 @@ export function Calendar({ className, classNames, ...props }: CalendarProps) {
         showOutsideDays
         className={cn("p-3", className)}
         classNames={{
-          months: "flex flex-col",
+          months: "relative flex flex-col",
           month: "space-y-3",
-          month_caption: "flex items-center justify-center relative h-8",
+          month_caption:
+            "flex items-center justify-center h-8 pointer-events-none",
           caption_label: "text-sm font-medium capitalize",
-          nav: "absolute inset-x-0 top-0 flex items-center justify-between",
+          nav: "absolute inset-x-0 top-0 z-10 flex items-center justify-between",
           button_previous: cn(
             "flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
             "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100",
