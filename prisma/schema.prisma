@@ -25,6 +25,8 @@ model User {
   invitedExpSessions  ExpenseSession[] @relation("Invitee")
   expenses            Expense[]
   pushSubscriptions   PushSubscription[]
+  households          HouseholdMember[]
+  createdHouseholds   Household[]      @relation("HouseholdCreator")
 }
 
 model Account {
@@ -82,15 +84,53 @@ model ExpenseSession {
   invitee        User?   @relation("Invitee", fields: [inviteeId], references: [id], onDelete: SetNull)
   lastNotifiedAt DateTime?
 
+  householdId String?
+  household   Household? @relation(fields: [householdId], references: [id], onDelete: SetNull)
+
   expenses Expense[]
 
   @@index([creatorId])
   @@index([inviteeId])
+  @@index([householdId])
 }
 
 enum SessionStatus {
   OPEN
   CLOSED
+}
+
+model Household {
+  id          String   @id @default(cuid())
+  name        String
+  shareCode   String   @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createdById String
+  createdBy   User              @relation("HouseholdCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  members     HouseholdMember[]
+  sessions    ExpenseSession[]
+
+  @@index([createdById])
+}
+
+model HouseholdMember {
+  id          String        @id @default(cuid())
+  householdId String
+  userId      String
+  role        HouseholdRole @default(MEMBER)
+  joinedAt    DateTime      @default(now())
+
+  household Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([householdId, userId])
+  @@index([userId])
+}
+
+enum HouseholdRole {
+  OWNER
+  MEMBER
 }
 
 model PushSubscription {
@@ -114,6 +154,7 @@ model Expense {
   date       DateTime @default(now())
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+  toDiscuss  Boolean  @default(false)
 
   sessionId String
   session   ExpenseSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)

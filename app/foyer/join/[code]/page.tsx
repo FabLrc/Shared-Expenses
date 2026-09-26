@@ -1,0 +1,76 @@
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
+import { JoinClient } from "./join-client";
+
+export default async function JoinHouseholdPage({
+  params,
+}: {
+  params: Promise<{ code: string }>;
+}) {
+  const { code } = await params;
+  const session = await auth();
+
+  const household = await prisma.household.findUnique({
+    where: { shareCode: code },
+    select: {
+      id: true,
+      name: true,
+      createdBy: { select: { name: true } },
+      members: {
+        select: { userId: true },
+      },
+    },
+  });
+
+  if (!household) {
+    return (
+      <main className="flex flex-1 items-center justify-center px-4 py-16 text-center">
+        <div>
+          <div className="text-4xl mb-4">🔍</div>
+          <h1 className="text-xl font-bold mb-2">Lien invalide</h1>
+          <p className="text-zinc-500">
+            Ce lien d&apos;invitation de foyer n&apos;existe pas ou a expiré.
+          </p>
+        </div>
+      </main>
+    );
+  }
+
+  if (session?.user?.id) {
+    const alreadyMember = household.members.some(
+      (m) => m.userId === session.user!.id
+    );
+    if (alreadyMember) {
+      redirect(`/households/${household.id}`);
+    }
+
+    await prisma.householdMember.upsert({
+      where: {
+        householdId_userId: {
+          householdId: household.id,
+          userId: session.user.id,
+        },
+      },
+      create: {
+        householdId: household.id,
+        userId: session.user.id,
+        role: "MEMBER",
+      },
+      update: {},
+    });
+
+    revalidatePath("/households");
+    revalidatePath("/dashboard");
+    redirect(`/households/${household.id}`);
+  }
+
+  return (
+    <JoinClient
+      householdName={household.name}
+      inviterName={household.createdBy.name ?? "Quelqu'un"}
+      shareCode={code}
+    />
+  );
+}

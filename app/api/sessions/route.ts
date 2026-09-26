@@ -4,11 +4,15 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { nanoid } from "nanoid";
 import { z } from "zod";
+import { sendPushToUser } from "@/lib/push";
 
 const createSessionSchema = z.object({
   title: z.string().min(1).max(200),
   defaultSplitRatio: z.number().min(0).max(1).default(0.5),
   currency: z.string().length(3).default("EUR"),
+  // Pre-assign an invitee from a shared household.
+  inviteeId: z.string().min(1).optional(),
+  householdId: z.string().min(1).optional(),
 });
 
 export async function GET() {
@@ -45,6 +49,38 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const data = createSessionSchema.parse(body);
 
+    // If a household invitee is supplied, validate that both users are members
+    // of the same household before pre-assigning.
+    if (data.inviteeId || data.householdId) {
+      if (!data.inviteeId || !data.householdId) {
+        return NextResponse.json(
+          {
+            error:
+              "Pour pré-assigner un invité via un foyer, indiquez foyer et membre.",
+          },
+          { status: 400 }
+        );
+      }
+      if (data.inviteeId === session.user.id) {
+        return NextResponse.json(
+          { error: "Vous ne pouvez pas vous inviter vous-même." },
+          { status: 400 }
+        );
+      }
+      const shared = await prisma.householdMember.count({
+        where: {
+          householdId: data.householdId,
+          userId: { in: [session.user.id, data.inviteeId] },
+        },
+      });
+      if (shared !== 2) {
+        return NextResponse.json(
+          { error: "Le membre choisi n'appartient pas à ce foyer." },
+          { status: 400 }
+        );
+      }
+    }
+
     const expenseSession = await prisma.expenseSession.create({
       data: {
         title: data.title,
@@ -52,6 +88,8 @@ export async function POST(req: NextRequest) {
         currency: data.currency,
         shareCode: nanoid(8),
         creatorId: session.user.id,
+        inviteeId: data.inviteeId ?? null,
+        householdId: data.householdId ?? null,
       },
       include: {
         creator: { select: { id: true, name: true, image: true } },
@@ -60,6 +98,15 @@ export async function POST(req: NextRequest) {
     });
 
     revalidatePath("/dashboard");
+
+    if (data.inviteeId) {
+      const url = `${(process.env.NEXTAUTH_URL ?? "").replace(/\/$/, "")}/sessions/${expenseSession.id}`;
+      sendPushToUser(data.inviteeId, {
+        title: "Nouvelle session",
+        body: `${session.user.name ?? "Quelqu'un"} vous a ajouté à "${data.title}".`,
+        url,
+      }).catch((err) => console.error("push notify failed:", err));
+    }
 
     return NextResponse.json(expenseSession, { status: 201 });
   } catch (error) {

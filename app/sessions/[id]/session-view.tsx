@@ -150,6 +150,7 @@ export function SessionView({
     amount: "",
     splitRatio: "",
     date: new Date().toISOString().split("T")[0],
+    toDiscuss: false,
   });
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState("");
@@ -163,11 +164,18 @@ export function SessionView({
 
   // Edit expense
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({
+  const [editForm, setEditForm] = useState<{
+    label: string;
+    amount: string;
+    splitRatio: string;
+    date: string;
+    toDiscuss: boolean;
+  }>({
     label: "",
     amount: "",
     splitRatio: "",
     date: "",
+    toDiscuss: false,
   });
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState("");
@@ -194,6 +202,7 @@ export function SessionView({
   // Search
   const [search, setSearch] = useState("");
   const [showSearch, setShowSearch] = useState(false);
+  const [discussOnly, setDiscussOnly] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -234,6 +243,7 @@ export function SessionView({
           ? (isCreator ? parseFloat(formData.splitRatio) / 100 : 1 - parseFloat(formData.splitRatio) / 100)
           : null,
         date: formData.date ? new Date(formData.date).toISOString() : undefined,
+        toDiscuss: formData.toDiscuss,
       }),
     });
 
@@ -246,7 +256,13 @@ export function SessionView({
 
     const newExpense: ExpenseWithAdder = await res.json();
     setSession((prev) => ({ ...prev, expenses: [newExpense, ...prev.expenses] }));
-    setFormData({ label: "", amount: "", splitRatio: "", date: new Date().toISOString().split("T")[0] });
+    setFormData({
+      label: "",
+      amount: "",
+      splitRatio: "",
+      date: new Date().toISOString().split("T")[0],
+      toDiscuss: false,
+    });
     setFormLoading(false);
     titleRef.current?.focus();
   }
@@ -275,6 +291,7 @@ export function SessionView({
         ? String(Math.round((isCreator ? expense.splitRatio : 1 - expense.splitRatio) * 100))
         : "",
       date: new Date(expense.date).toISOString().split("T")[0],
+      toDiscuss: expense.toDiscuss,
     });
   }
 
@@ -293,6 +310,7 @@ export function SessionView({
           ? (isCreator ? parseFloat(editForm.splitRatio) / 100 : 1 - parseFloat(editForm.splitRatio) / 100)
           : null,
         date: editForm.date ? new Date(editForm.date).toISOString() : undefined,
+        toDiscuss: editForm.toDiscuss,
       }),
     });
 
@@ -393,11 +411,49 @@ export function SessionView({
     setSettling(false);
   }
 
-  const filteredExpenses = search.trim()
-    ? session.expenses.filter((e) =>
-        e.label.toLowerCase().includes(search.toLowerCase())
-      )
-    : session.expenses;
+  async function toggleDiscuss(expense: ExpenseWithAdder) {
+    const next = !expense.toDiscuss;
+    const previous = expense.toDiscuss;
+    setSession((prev) => ({
+      ...prev,
+      expenses: prev.expenses.map((e) =>
+        e.id === expense.id ? { ...e, toDiscuss: next } : e
+      ),
+    }));
+    const res = await fetch(
+      `/api/sessions/${session.id}/expenses/${expense.id}`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ toDiscuss: next }),
+      }
+    );
+    if (!res.ok) {
+      setSession((prev) => ({
+        ...prev,
+        expenses: prev.expenses.map((e) =>
+          e.id === expense.id ? { ...e, toDiscuss: previous } : e
+        ),
+      }));
+      return;
+    }
+    const updated: ExpenseWithAdder = await res.json();
+    setSession((prev) => ({
+      ...prev,
+      expenses: prev.expenses.map((e) =>
+        e.id === expense.id ? updated : e
+      ),
+    }));
+  }
+
+  const filteredExpenses = session.expenses.filter((e) => {
+    if (search.trim() && !e.label.toLowerCase().includes(search.toLowerCase()))
+      return false;
+    if (discussOnly && !e.toDiscuss) return false;
+    return true;
+  });
+
+  const discussCount = session.expenses.filter((e) => e.toDiscuss).length;
 
   const myExpenses = filteredExpenses.filter((e) => e.addedById === currentUserId);
   const partnerExpenses = filteredExpenses.filter((e) => e.addedById !== currentUserId);
@@ -541,11 +597,22 @@ export function SessionView({
           </div>
         </div>
 
-        {/* Search toggle */}
+        {/* Search toggle + "À discuter" filter */}
         {session.expenses.length > 0 && (
-          <div className="flex items-center justify-end -mt-2">
+          <div className="flex items-center justify-end gap-2 -mt-2">
+            <button
+              onClick={() => setDiscussOnly((v) => !v)}
+              className={`text-xs px-2.5 py-1 rounded-full font-medium transition-colors shrink-0 ${
+                discussOnly
+                  ? "bg-amber-500 text-white"
+                  : "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900/60"
+              }`}
+              aria-pressed={discussOnly}
+            >
+              À discuter{discussCount > 0 ? ` (${discussCount})` : ""}
+            </button>
             {showSearch ? (
-              <div className="flex items-center gap-2 w-full">
+              <div className="flex items-center gap-2 flex-1">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 pointer-events-none" />
                   <Input
@@ -669,6 +736,15 @@ export function SessionView({
                               onChange={(e) => setFormData({ ...formData, splitRatio: e.target.value })}
                             />
                           </div>
+                          <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              className="h-4 w-4 rounded border-zinc-300 text-amber-500 focus:ring-amber-400"
+                              checked={formData.toDiscuss}
+                              onChange={(e) => setFormData({ ...formData, toDiscuss: e.target.checked })}
+                            />
+                            <span>À discuter avec l&apos;autre personne</span>
+                          </label>
                         </div>
                         <div className="flex gap-2 pt-1">
                           <Button type="button" variant="outline" className="flex-1" onClick={() => setShowForm(false)}>
@@ -696,6 +772,8 @@ export function SessionView({
               onDelete={deleteExpense}
               deletingId={deletingId}
               canDelete={session.status === "OPEN"}
+              canToggleDiscuss={session.status === "OPEN"}
+              onToggleDiscuss={toggleDiscuss}
               editingId={editingId}
               editForm={editForm}
               editLoading={editLoading}
@@ -718,6 +796,8 @@ export function SessionView({
                 onDelete={deleteExpense}
                 deletingId={deletingId}
                 canDelete={false}
+                canToggleDiscuss={session.status === "OPEN"}
+                onToggleDiscuss={toggleDiscuss}
                 editingId={editingId}
                 editForm={editForm}
                 editLoading={editLoading}
@@ -847,6 +927,8 @@ function ExpenseList({
   onDelete,
   deletingId,
   canDelete,
+  canToggleDiscuss,
+  onToggleDiscuss,
   editingId,
   editForm,
   editLoading,
@@ -865,12 +947,20 @@ function ExpenseList({
   onDelete: (id: string) => void;
   deletingId: string | null;
   canDelete: boolean;
+  canToggleDiscuss: boolean;
+  onToggleDiscuss: (expense: ExpenseWithAdder) => void;
   editingId: string | null;
-  editForm: { label: string; amount: string; splitRatio: string; date: string };
+  editForm: {
+    label: string;
+    amount: string;
+    splitRatio: string;
+    date: string;
+    toDiscuss: boolean;
+  };
   editLoading: boolean;
   editError: string;
   onEdit: (expense: ExpenseWithAdder) => void;
-  onEditChange: (field: string, value: string) => void;
+  onEditChange: (field: string, value: string | boolean) => void;
   onEditSave: (e: React.FormEvent, expenseId: string) => void;
   onEditCancel: () => void;
 }) {
@@ -945,6 +1035,15 @@ function ExpenseList({
                           onChange={(e) => onEditChange("splitRatio", e.target.value)}
                         />
                       </div>
+                      <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 rounded border-zinc-300 text-amber-500 focus:ring-amber-400"
+                          checked={editForm.toDiscuss}
+                          onChange={(e) => onEditChange("toDiscuss", e.target.checked)}
+                        />
+                        <span>À discuter avec l&apos;autre personne</span>
+                      </label>
                     </div>
                     <div className="flex gap-2 pt-1">
                       <Button type="button" variant="outline" size="sm" className="flex-1" onClick={onEditCancel}>
@@ -963,7 +1062,11 @@ function ExpenseList({
           return (
             <div
               key={expense.id}
-              className="flex items-center bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-3 gap-3"
+              className={`flex items-center border rounded-xl px-4 py-3 gap-3 ${
+                expense.toDiscuss
+                  ? "bg-amber-50 dark:bg-amber-950/30 border-amber-300 dark:border-amber-800"
+                  : "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700"
+              }`}
             >
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{expense.label}</p>
@@ -982,6 +1085,24 @@ function ExpenseList({
                   ma part : {formatCurrency(myShare)}
                 </p>
               </div>
+              {/* Toggle "À discuter" — shared marker, both members can flip */}
+              {canToggleDiscuss && (
+                <button
+                  onClick={() => onToggleDiscuss(expense)}
+                  className={`shrink-0 text-xs font-medium px-2.5 py-1 rounded-lg transition-colors ${
+                    expense.toDiscuss
+                      ? "bg-amber-200 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200 hover:bg-amber-300 dark:hover:bg-amber-900"
+                      : "text-zinc-500 dark:text-zinc-400 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/30"
+                  }`}
+                  aria-label={
+                    expense.toDiscuss
+                      ? "Retirer la marque à discuter"
+                      : "Marquer à discuter avec l'autre personne"
+                  }
+                >
+                  {expense.toDiscuss ? "Garder" : "À discuter"}
+                </button>
+              )}
               {/* Action buttons — proper touch targets */}
               {isOwn && canDelete && (
                 <button
@@ -1011,7 +1132,7 @@ function ExpenseList({
 }
 
 type SortKey = "date-desc" | "date-asc" | "amount-desc" | "amount-asc" | "name-asc";
-type FilterKey = "all" | "mine" | "partner";
+type FilterKey = "all" | "mine" | "partner" | "discuss";
 
 const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: "date-desc", label: "Date ↓" },
@@ -1093,6 +1214,7 @@ function SummaryView({
     .filter((e) => {
       if (filter === "mine") return e.addedById === currentUserId;
       if (filter === "partner") return e.addedById !== currentUserId;
+      if (filter === "discuss") return e.toDiscuss;
       return true;
     })
     .sort((a, b) => {
@@ -1109,6 +1231,7 @@ function SummaryView({
     { key: "all", label: "Toutes" },
     { key: "mine", label: currentUser?.name ?? "Moi" },
     { key: "partner", label: partner?.name ?? "Partenaire" },
+    { key: "discuss", label: "À discuter" },
   ];
 
   return (
@@ -1238,6 +1361,8 @@ function SummaryView({
                         ? "bg-blue-500 text-white"
                         : key === "partner"
                         ? "bg-violet-500 text-white"
+                        : key === "discuss"
+                        ? "bg-amber-500 text-white"
                         : "bg-zinc-800 dark:bg-zinc-100 text-white dark:text-zinc-900"
                       : "bg-zinc-100 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-600"
                   }`}

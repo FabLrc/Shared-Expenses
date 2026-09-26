@@ -34,6 +34,7 @@ export default async function DashboardPage({
         creator: { select: { id: true, name: true } },
         invitee: { select: { id: true, name: true } },
         expenses: { select: { id: true, amount: true } },
+        household: { select: { id: true, name: true } },
       },
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * PAGE_SIZE,
@@ -55,6 +56,11 @@ export default async function DashboardPage({
             💸 SplitMate
           </Link>
           <div className="flex items-center gap-2">
+            <Link href="/households">
+              <Button variant="ghost" size="sm">
+                🏠 Foyers
+              </Button>
+            </Link>
             <span className="text-sm text-zinc-500 dark:text-zinc-200">
               {session.user.name ?? session.user.email}
             </span>
@@ -131,6 +137,14 @@ export default async function DashboardPage({
                           {partner
                             ? `Avec ${partner.name ?? "Invité"}`
                             : "En attente d'un invité"}
+                          {s.household && (
+                            <Link
+                              href={`/households/${s.household.id}`}
+                              className="ml-2 inline-flex items-center text-xs px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900/60"
+                            >
+                              🏠 {s.household.name}
+                            </Link>
+                          )}
                         </CardDescription>
                       </CardHeader>
                       <CardContent className="pt-0">

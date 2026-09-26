@@ -9,6 +9,7 @@ const updateExpenseSchema = z.object({
   amount: z.number().positive().optional(),
   splitRatio: z.number().min(0).max(1).nullable().optional(),
   date: z.string().datetime().optional(),
+  toDiscuss: z.boolean().optional(),
 });
 
 type Params = { params: Promise<{ id: string; expenseId: string }> };
@@ -39,8 +40,18 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
       if (!expense || expense.sessionId !== id)
         throw new TxError("Dépense introuvable.", 404);
-      if (expense.addedById !== userId)
+
+      // The "to discuss" flag is a shared session-level marker: either member may
+      // toggle it. Other edits remain owner-only.
+      const keys = Object.keys(data);
+      const isOnlyFlagUpdate =
+        keys.length > 0 && keys.every((k) => k === "toDiscuss");
+      const isMember =
+        expense.session.creatorId === userId ||
+        expense.session.inviteeId === userId;
+      if (expense.addedById !== userId && !(isOnlyFlagUpdate && isMember))
         throw new TxError("Vous ne pouvez modifier que vos propres dépenses.", 403);
+
       if (expense.session.status === "CLOSED")
         throw new TxError("La session est fermée.", 400);
 
