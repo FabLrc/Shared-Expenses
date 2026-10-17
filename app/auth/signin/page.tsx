@@ -9,12 +9,24 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
+const AUTH_ERRORS: Record<string, string> = {
+  DiscordEmailUnverified:
+    "Votre compte Discord n'a pas d'email vérifié. Vérifiez votre email dans les paramètres Discord puis réessayez.",
+  OAuthAccountNotLinked:
+    "Un compte existe déjà avec cet email via une autre méthode de connexion.",
+  AccessDenied: "Connexion refusée.",
+  Configuration: "Erreur de configuration du serveur d'authentification.",
+};
+
 function SignInForm() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const authError = searchParams.get("error");
+  const [error, setError] = useState(
+    authError ? (AUTH_ERRORS[authError] ?? "La connexion a échoué. Réessayez.") : ""
+  );
   const [loading, setLoading] = useState(false);
 
   async function handleCredentials(e: React.FormEvent) {
