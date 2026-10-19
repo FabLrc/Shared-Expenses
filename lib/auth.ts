@@ -63,6 +63,16 @@ export const authConfig: NextAuthConfig = {
     newUser: "/dashboard",
   },
   callbacks: {
+    async signIn({ account, profile }) {
+      if (account?.provider === "discord") {
+        // User.email is required in the schema: reject Discord accounts
+        // without a verified email instead of crashing in createUser.
+        if (!profile?.email || profile.verified !== true) {
+          return "/auth/signin?error=DiscordEmailUnverified";
+        }
+      }
+      return true;
+    },
     async session({ session, token }) {
       if (token.sub) {
         session.user.id = token.sub;
